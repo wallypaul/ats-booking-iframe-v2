@@ -89,7 +89,8 @@ export default function Confirmation({ passenger, serviceData, tripsData }) {
             value={`${passenger.firstName} ${passenger.lastName}`}
           />
           <Row label="Email" value={passenger.email} />
-          <Row label="Phone" value={passenger.phone} />
+          <Row label="Phone" value={passenger.phone_1} />
+          <Row label="Alternative Phone" value={passenger.phone_2} />
           <Row label="Date of Birth" value={passenger.dob} />
           {passenger.memberId && (
             <Row label="Member ID" value={passenger.memberId} />

@@ -53,6 +53,13 @@ export default function TripsStep({ tripsData, setTripsData }) {
   const [mode, setMode] = useState(tripsData.length === 0 ? 'add' : 'list');
   const [editIndex, setEditIndex] = useState(null);
   const [showReturnTripBtn, setShowReturnTripBtn] = useState(true);
+  const [showAddAnotherTripBtn, setShowAddAnotherTripBtn] = useState(true);
+  const returnDraft = {
+      pickup: draft.dropoff,
+      dropoff: draft.pickup,
+      date: draft.date,
+      time: draft.time,
+    };
 
   const updateDraft = (field) => (e) =>
     setDraft((prev) => ({ ...prev, [field]: e.target.value }));
@@ -66,25 +73,21 @@ export default function TripsStep({ tripsData, setTripsData }) {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-  const hideReturnTripBtn = () => {
-    // const returnBtn = document.getElementById('returnTripBtn');
-    // if (returnBtn) {
-    //   returnBtn.style.display = 'none';
-    // }
-  };
 
 
   const handleReturnTrip = () => {
     
     if (!validate()) return;
 
-    const returnDraft = {
-      pickup: draft.dropoff,
-      dropoff: draft.pickup,
-      date: draft.date,
-      time: draft.time,
-    };
+    // const returnDraft = {
+    //   pickup: draft.dropoff,
+    //   dropoff: draft.pickup,
+    //   date: draft.date,
+    //   time: draft.time,
+    // };
     setDraft(returnDraft);
+    setErrors({});
+    setMode('add');
     if (mode === 'add') {
       setMode('edit');
     } else if (mode === 'edit') {
@@ -154,7 +157,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
           )}
 
           <Grid container spacing={2.5}>
-            <Grid container spacing={1} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
+            <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
               <Field label="Pickup Address" required>
                 <TextField
                   placeholder="123 Main St, City, State"
@@ -166,7 +169,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
               </Field>
             </Grid>
 
-            <Grid container spacing={1} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
+            <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <Field label="Dropoff Address" required>
                 <TextField
                   placeholder="456 Oak Ave, City, State"
@@ -178,7 +181,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
               </Field>
             </Grid>
 
-            <Grid container spacing={1} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
+            <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <Field label="Date" required>
                 <TextField
                   type="date"
@@ -199,8 +202,8 @@ export default function TripsStep({ tripsData, setTripsData }) {
               </Field>
             </Grid>
 
-            <Grid container spacing={1} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
-              <Field label="Appointment Time" required>
+            <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
+              <Field label="Pickup Time" required>
                 <TextField
                   type="time"
                   value={draft.time}
@@ -211,8 +214,8 @@ export default function TripsStep({ tripsData, setTripsData }) {
               </Field>
             </Grid>
 
-            <Grid container spacing={1} size={12}>
-              <Stack direction="row" spacing={1.5}>
+            <Grid container spacing={0} size={12}>
+              <Stack direction="row" spacing={0}>
                 
                 <Button
                 id="saveTripBtn"
@@ -345,7 +348,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
         </Paper>
 
         {/* add another */}
-        {}
+        {showAddAnotherTripBtn && (
         <Button
           id="addTripBtn"
           variant="contained"
@@ -361,6 +364,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
         >
           Add Another Trip
         </Button>
+        )}
 
         {/* Add return trip */}
         {showReturnTripBtn && (
@@ -368,7 +372,14 @@ export default function TripsStep({ tripsData, setTripsData }) {
           id='returnTripBtn'
           variant="outlined"
           startIcon={<ReplayIcon />}
-          onClick={handleReturnTrip}
+          onClick={() => {
+            handleReturnTrip();
+            setShowReturnTripBtn(false);
+            setDraft({...returnDraft});
+            setErrors({});
+            setEditIndex(null);
+            setMode('add');
+          }}
           fullWidth
           >
           Add Return Trip
