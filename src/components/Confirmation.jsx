@@ -16,16 +16,14 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 const SERVICES_MAP = {
-  ambulatory: {
+  2: {
     label: 'Ambulatory',
     tag: 'Walk-on',
-    value: 1,
     icon: <DirectionsWalkIcon sx={{ fontSize: 28, color: 'primary.main' }} />,
   },
-  wheelchair: {
+  3: {
     label: 'Wheelchair',
     tag: 'ADA Accessible',
-    value: 2,
     icon: <AccessibleIcon sx={{ fontSize: 28, color: 'primary.main' }} />,
   },
 };
@@ -67,7 +65,7 @@ function Row({ label, value }) {
   );
 }
 
-export default function Confirmation({ passenger, serviceData, tripsData }) {
+export default function Confirmation({ passenger, serviceData, tripsData, tripPrices }) {
   const svc = SERVICES_MAP[serviceData.service];
 
   return (
@@ -128,10 +126,10 @@ export default function Confirmation({ passenger, serviceData, tripsData }) {
               />
             </Box>
           </Stack>
-          <Row
+          {/* <Row
             label="Passengers"
             value={`${serviceData.passengers} passenger${serviceData.passengers > 1 ? 's' : ''}`}
-          />
+          /> */}
           <Row
             label="Companions"
             value={
@@ -209,9 +207,49 @@ export default function Confirmation({ passenger, serviceData, tripsData }) {
                   </Stack>
                 </Grid>
               </Grid>
+              {tripPrices[i] && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    pt: 1,
+                    borderTop: '1px dashed',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {tripPrices[i].distance} mi · {tripPrices[i].duration}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={700} color="primary.main">
+                    ${tripPrices[i].price}
+                  </Typography>
+                </Box>
+              )}
               {i < tripsData.length - 1 && <Divider sx={{ my: 1.5 }} />}
             </Box>
           ))}
+          {tripPrices.length > 1 && (
+            <Box
+              sx={{
+                mt: 1.5,
+                pt: 1.5,
+                borderTop: '2px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant="body2" fontWeight={600}>
+                Total Estimated Price
+              </Typography>
+              <Typography variant="body1" fontWeight={700} color="primary.main">
+                ${tripPrices.reduce((sum, p) => sum + (p.price || 0), 0)}
+              </Typography>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Box>

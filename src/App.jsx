@@ -11,6 +11,9 @@ import {
   Fade,
   Stack,
   Chip,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -55,6 +58,8 @@ export default function App() {
   const [serviceErrors, setServiceErrors] = useState({});
 
   const [tripsData, setTripsData] = useState([]);
+  const [tripPrices, setTripPrices] = useState([]);
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
 
   // ── validation ──
   const validatePassenger = () => {
@@ -91,8 +96,30 @@ export default function App() {
     }
   };
 
-  const handleNext = () => {
-    if (validateStep()) setActiveStep((s) => Math.min(s + 1, 3));
+  const handleNext = async () => {
+    if (!validateStep()) return;
+    if (activeStep === 2) {
+      setIsPricingLoading(true);
+      setSubmitError('');
+      try {
+        const payload = tripsData.map((t) => ({ origin: t.pickup, destination: t.dropoff , service: serviceData.service , companion: serviceData.companion }));
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/distance/bulk/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Pricing unavailable');
+        const prices = await res.json();
+        setTripPrices(prices);
+        setActiveStep((s) => Math.min(s + 1, 3));
+      } catch {
+        setSubmitError('Could not calculate trip pricing. Please try again.');
+      } finally {
+        setIsPricingLoading(false);
+      }
+      return;
+    }
+    setActiveStep((s) => Math.min(s + 1, 3));
   };
   const handleBack = () => setActiveStep((s) => Math.max(s - 1, 0));
   const handleStepClick = (idx) => {
@@ -108,11 +135,13 @@ export default function App() {
     setSubmitError('');
     const payload = { passenger, serviceData, tripsData };
     try {
+      console.log('Submitting payload:', payload); // Debug log
       const res = await fetch(`${import.meta.env.VITE_API_URL}/booking/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
       const body = await res.json();
 
       if (res.status === 201) {
@@ -145,6 +174,8 @@ export default function App() {
       setSubmitError('Unable to reach the server. Please check your connection.');
     }
   };
+  const handleCloseError = () => setSubmitError('');
+
   const handleReset = () => {
     setActiveStep(0);
     setSubmitted(false);
@@ -155,6 +186,7 @@ export default function App() {
     setServiceData({ ...INITIAL_SERVICE });
     setServiceErrors({});
     setTripsData([]);
+    setTripPrices([]);
   };
 
   // ── render current step ──
@@ -190,6 +222,7 @@ export default function App() {
             passenger={passenger}
             serviceData={serviceData}
             tripsData={tripsData}
+            tripPrices={tripPrices}
           />
         );
       default:
@@ -315,11 +348,11 @@ export default function App() {
         {activeStep < 3 ? (
           <Button
             variant="contained"
-            endIcon={<ArrowForwardIcon />}
+            endIcon={isPricingLoading ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
             onClick={handleNext}
-            disabled={activeStep === 2 && tripsData.length === 0}
+            disabled={(activeStep === 2 && tripsData.length === 0) || isPricingLoading}
           >
-            Continue
+            {isPricingLoading ? 'Calculating…' : 'Continue'}
           </Button>
         ) : (
           <Button
@@ -332,6 +365,16 @@ export default function App() {
           </Button>
         )}
       </Stack>
+      <Snackbar
+        open={!!submitError}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        autoHideDuration={6000}
+      >
+        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
+          {submitError}
+        </Alert>
+      </Snackbar>
     </Shell>
   );
 }

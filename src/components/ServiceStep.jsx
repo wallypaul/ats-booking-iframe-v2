@@ -70,12 +70,12 @@ export default function ServiceStep({ data, errors, onChange }) {
         )}
         <Grid container spacing={2} >
           {SERVICES.map((svc) => {
-            const active = data.service === svc.id;
+            const active = data.service === svc.value;
             return (
               <Grid key={svc.id} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
                 <Paper
                   elevation={0}
-                  onClick={() => update('service', svc.id)}
+                  onClick={() => update('service', svc.value)}
                   sx={{
                     p: 3,
                     cursor: 'pointer',
