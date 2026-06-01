@@ -16,7 +16,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import FlagIcon from '@mui/icons-material/Flag';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -24,7 +24,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import SaveIcon from '@mui/icons-material/Save';
 
-const EMPTY_TRIP = { pickup: '', dropoff: '', date: '', time: '' };
+const EMPTY_TRIP = { pick_up_address: '', drop_off_address: '', date: '', time: '' };
 
 function Field({ label, required, children }) {
   return (
@@ -55,8 +55,8 @@ export default function TripsStep({ tripsData, setTripsData }) {
   const [showReturnTripBtn, setShowReturnTripBtn] = useState(true);
   const [showAddAnotherTripBtn, setShowAddAnotherTripBtn] = useState(true);
   const returnDraft = {
-      pickup: draft.dropoff,
-      dropoff: draft.pickup,
+      pick_up_address: draft.drop_off_address,
+      drop_off_address: draft.pick_up_address,
       date: draft.date,
       time: draft.time,
     };
@@ -66,8 +66,8 @@ export default function TripsStep({ tripsData, setTripsData }) {
 
   const validate = () => {
     const e = {};
-    if (!draft.pickup.trim()) e.pickup = 'Pickup address is required';
-    if (!draft.dropoff.trim()) e.dropoff = 'Dropoff address is required';
+    if (!draft.pick_up_address.trim()) e.pick_up_address = 'pick_up_address address is required';
+    if (!draft.drop_off_address.trim()) e.drop_off_address = 'drop_off_address address is required';
     if (!draft.date) e.date = 'Date is required';
     if (!draft.time) e.time = 'Time is required';
     setErrors(e);
@@ -80,8 +80,8 @@ export default function TripsStep({ tripsData, setTripsData }) {
     if (!validate()) return;
 
     // const returnDraft = {
-    //   pickup: draft.dropoff,
-    //   dropoff: draft.pickup,
+    //   pick_up_address: draft.drop_off_address,
+    //   drop_off_address: draft.pick_up_address,
     //   date: draft.date,
     //   time: draft.time,
     // };
@@ -158,25 +158,25 @@ export default function TripsStep({ tripsData, setTripsData }) {
 
           <Grid container spacing={2.5}>
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
-              <Field label="Pickup Address" required>
+              <Field label="pick_up_address Address" required>
                 <TextField
                   placeholder="123 Main St, City, State"
-                  value={draft.pickup}
-                  onChange={updateDraft('pickup')}
-                  error={!!errors.pickup}
-                  helperText={errors.pickup}
+                  value={draft.pick_up_address}
+                  onChange={updateDraft('pick_up_address')}
+                  error={!!errors.pick_up_address}
+                  helperText={errors.pick_up_address}
                 />
               </Field>
             </Grid>
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
-              <Field label="Dropoff Address" required>
+              <Field label="drop_off_address Address" required>
                 <TextField
                   placeholder="456 Oak Ave, City, State"
-                  value={draft.dropoff}
-                  onChange={updateDraft('dropoff')}
-                  error={!!errors.dropoff}
-                  helperText={errors.dropoff}
+                  value={draft.drop_off_address}
+                  onChange={updateDraft('drop_off_address')}
+                  error={!!errors.drop_off_address}
+                  helperText={errors.drop_off_address}
                 />
               </Field>
             </Grid>
@@ -189,21 +189,23 @@ export default function TripsStep({ tripsData, setTripsData }) {
                   onChange={updateDraft('date')}
                   error={!!errors.date}
                   helperText={errors.date}
-                  inputProps={{
-                    min: (() => {
-                    const today = new Date();
-                    const yyyy = today.getFullYear();
-                    const mm = String(today.getMonth() + 1).padStart(2, '0');
-                    const dd = String(today.getDate()).padStart(2, '0');
-                    return `${yyyy}-${mm}-${dd}`;
-                      })()
-                          }}
+                  slotProps={{
+                    htmlInput: {
+                      min: (() => {
+                      const today = new Date();
+                      const yyyy = today.getFullYear();
+                      const mm = String(today.getMonth() + 1).padStart(2, '0');
+                      const dd = String(today.getDate()).padStart(2, '0');
+                      return `${yyyy}-${mm}-${dd}`;
+                        })(),
+                    },
+                  }}
                 />
               </Field>
             </Grid>
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
-              <Field label="Pickup Time" required>
+              <Field label="pick_up_address Time" required>
                 <TextField
                   type="time"
                   value={draft.time}
@@ -296,15 +298,15 @@ export default function TripsStep({ tripsData, setTripsData }) {
             <Grid size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <DetailRow
                 icon={<LocationOnIcon sx={{ fontSize: 18, color: 'primary.main', mt: 0.3 }} />}
-                label="Pickup"
-                value={trip.pickup}
+                label="pick_up_address"
+                value={trip.pick_up_address}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <DetailRow
                 icon={<FlagIcon sx={{ fontSize: 18, color: 'secondary.main', mt: 0.3 }} />}
-                label="Dropoff"
-                value={trip.dropoff}
+                label="drop_off_address"
+                value={trip.drop_off_address}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>

@@ -6,6 +6,8 @@ import {
   Chip,
   Divider,
   Stack,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
@@ -65,7 +67,7 @@ function Row({ label, value }) {
   );
 }
 
-export default function Confirmation({ passenger, serviceData, tripsData, tripPrices }) {
+export default function Confirmation({ passenger, serviceData, tripsData, tripPrices, termsAccepted, onTermsChange }) {
   const svc = SERVICES_MAP[serviceData.service];
 
   return (
@@ -172,7 +174,7 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                       sx={{ fontSize: 16, color: 'primary.main' }}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      {trip.pickup}
+                      {trip.pick_up_address}
                     </Typography>
                   </Stack>
                 </Grid>
@@ -182,7 +184,7 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                       sx={{ fontSize: 16, color: 'secondary.main' }}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      {trip.dropoff}
+                      {trip.drop_off_address}
                     </Typography>
                   </Stack>
                 </Grid>
@@ -252,6 +254,29 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
           )}
         </Paper>
       </Box>
+      {/* ── terms ── */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={termsAccepted}
+            onChange={(e) => onTermsChange(e.target.checked)}
+            color="primary"
+          />
+        }
+        label={
+          <Typography variant="body2">
+            I have read and agree to the{' '}
+            <Box
+              target="_blank"
+              component="a"
+              href="https://www.accessibletransportservicesllc.com/privacy"
+              sx={{ color: 'primary.main', textDecoration: 'underline' }}
+            >
+              terms and conditions
+            </Box>
+          </Typography>
+        }
+      />
     </Box>
   );
 }

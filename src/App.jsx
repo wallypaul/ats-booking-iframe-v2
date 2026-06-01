@@ -18,7 +18,7 @@ import {
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
 import PassengerDetails from './components/PassengerDetails';
@@ -60,8 +60,28 @@ export default function App() {
   const [tripsData, setTripsData] = useState([]);
   const [tripPrices, setTripPrices] = useState([]);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // ── validation ──
+  const usPhoneRegex = /^(\+1)?\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
+
+  const handlePassengerBlur = (field) => {
+    const value = passenger[field].trim();
+    setPassengerErrors((prev) => {
+      const e = { ...prev };
+      if (field === 'phone_1') {
+        if (!value) e.phone_1 = 'Phone number is required';
+        else if (!usPhoneRegex.test(value)) e.phone_1 = 'Enter a valid US phone number';
+        else delete e.phone_1;
+      }
+      if (field === 'phone_2') {
+        if (value && !usPhoneRegex.test(value)) e.phone_2 = 'Enter a valid US phone number';
+        else delete e.phone_2;
+      }
+      return e;
+    });
+  };
+
   const validatePassenger = () => {
     const e = {};
     if (!passenger.firstName.trim()) e.firstName = 'First name is required';
@@ -69,7 +89,8 @@ export default function App() {
     if (!passenger.email.trim()) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(passenger.email)) e.email = 'Enter a valid email';
     if (!passenger.phone_1.trim()) e.phone_1 = 'Phone number is required';
-    if (!passenger.phone_1.trim() && !passenger.phone_2.trim()) e.phone_1 = 'At least one phone number is required';
+    else if (!usPhoneRegex.test(passenger.phone_1.trim())) e.phone_1 = 'Enter a valid US phone number';
+    if (passenger.phone_2.trim() && !usPhoneRegex.test(passenger.phone_2.trim())) e.phone_2 = 'Enter a valid US phone number';
     if (!passenger.dob) e.dob = 'Date of birth is required';
     setPassengerErrors(e);
     return Object.keys(e).length === 0;
@@ -102,7 +123,8 @@ export default function App() {
       setIsPricingLoading(true);
       setSubmitError('');
       try {
-        const payload = tripsData.map((t) => ({ origin: t.pickup, destination: t.dropoff , service: serviceData.service , companion: serviceData.companion }));
+        const payload = tripsData.map((t) => ({ origin: t.pick_up_address, destination: t.drop_off_address , service: serviceData.service , companion: serviceData.companion }));
+        console.log('Pricing payload:', payload); // Debug log
         const res = await fetch(`${import.meta.env.VITE_API_URL}/distance/bulk/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,7 +155,7 @@ export default function App() {
 
   const handleSubmit = async () => {
     setSubmitError('');
-    const payload = { passenger, serviceData, tripsData };
+    const payload = { passenger, serviceData, tripsData: tripsData.map((t, i) => ({ ...t, price: tripPrices[i] })) };
     try {
       console.log('Submitting payload:', payload); // Debug log
       const res = await fetch(`${import.meta.env.VITE_API_URL}/booking/`, {
@@ -187,6 +209,7 @@ export default function App() {
     setServiceErrors({});
     setTripsData([]);
     setTripPrices([]);
+    setTermsAccepted(false);
   };
 
   // ── render current step ──
@@ -198,9 +221,13 @@ export default function App() {
             data={passenger}
             errors={passengerErrors}
             onChange={(d) => {
+              const changedField = Object.keys(d).find((k) => d[k] !== passenger[k]);
               setPassenger(d);
-              setPassengerErrors({});
+              if (changedField) {
+                setPassengerErrors((prev) => { const e = { ...prev }; delete e[changedField]; return e; });
+              }
             }}
+            onBlur={handlePassengerBlur}
           />
         );
       case 1:
@@ -223,6 +250,8 @@ export default function App() {
             serviceData={serviceData}
             tripsData={tripsData}
             tripPrices={tripPrices}
+            termsAccepted={termsAccepted}
+            onTermsChange={setTermsAccepted}
           />
         );
       default:
@@ -360,6 +389,7 @@ export default function App() {
             color="secondary"
             endIcon={<CheckCircleOutlineIcon />}
             onClick={handleSubmit}
+            disabled={!termsAccepted}
           >
             Submit Booking
           </Button>
@@ -415,19 +445,19 @@ function Shell({ children }) {
             <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             <Typography
               variant="h4"
-              sx={{ fontSize: '1.1rem', color: 'primary.main' }}
+              sx={{ fontSize: '1.1rem', color: 'primary.main', fontWeight: 700, letterSpacing: '0.04em', alligItems: 'center' }}
             >
               ATS BOOKING
             </Typography>
           </Stack>
-          <Typography
+          {/* <Typography
             variant="body2"
             color="text.secondary"
             align="center"
             sx={{ mb: 3, fontSize: 12, letterSpacing: '0.04em' }}
           >
             Non-Emergency Medical Transportation
-          </Typography>
+          </Typography> */}
 
           {children}
         </Paper>

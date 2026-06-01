@@ -6,7 +6,7 @@ A multi-step booking wizard built with **Vite**, **React 18**, and **Material UI
 
 - **Step 1 — Passenger Details**: First name, last name, email, phone, date of birth, optional member/policy ID
 - **Step 2 — Service & Needs**: Ambulatory or Wheelchair selection, number of passengers, companions, and comments
-- **Step 3 — Trips**: Add, edit, and remove trips with pagination. Each trip captures pickup address, dropoff address, date, and appointment time
+- **Step 3 — Trips**: Add, edit, and remove trips with pagination. Each trip captures pick_up_address address, drop_off_address address, date, and appointment time
 - **Step 4 — Confirmation**: Full review of all entered data before final submission
 
 ## Prerequisites
