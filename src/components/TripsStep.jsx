@@ -272,7 +272,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
     <Fade in timeout={300}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {/* pager */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack direction="row" sx={{ mb: 1, alignItems:'center' , justifyContent:'space-between' }}>
           <IconButton disabled={page === 0} onClick={() => setPage((p) => p - 1)} size="small">
             <NavigateBeforeIcon />
           </IconButton>

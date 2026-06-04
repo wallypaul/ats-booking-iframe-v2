@@ -43,6 +43,38 @@ const INITIAL_SERVICE = {
   companion: 'none',
   comments: '',
 };
+const INITIAL_TRIP = {
+  pick_up_address: '',
+  drop_off_address: '',
+  date: '',
+  time: '',
+};
+
+const normalizeDurationToHours = (duration) => {
+  if (duration == null || duration === '') return duration;
+  if (typeof duration === 'number') return Math.ceil(duration);
+
+  const value = String(duration).toLowerCase();
+  const hoursMatch = value.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/);
+  const minutesMatch = value.match(/(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/);
+
+  if (hoursMatch || minutesMatch) {
+    const hours = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+    return Math.ceil(hours + minutes / 60);
+  }
+
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? duration : Math.ceil(parsed);
+};
+
+const addTripPricesToTrips = (trips, prices) =>
+  trips.map((trip, i) => ({
+    ...trip,
+    price: prices[i]?.price,
+    distance: prices[i]?.distance,
+    duration: normalizeDurationToHours(prices[i]?.duration),
+  }));
 
 export default function App() {
   const [activeStep, setActiveStep] = useState(0);
@@ -124,7 +156,6 @@ export default function App() {
       setSubmitError('');
       try {
         const payload = tripsData.map((t) => ({ origin: t.pick_up_address, destination: t.drop_off_address , service: serviceData.service , companion: serviceData.companion }));
-        console.log('Pricing payload:', payload); // Debug log
         const res = await fetch(`${import.meta.env.VITE_API_URL}/distance/bulk/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -132,7 +163,9 @@ export default function App() {
         });
         if (!res.ok) throw new Error('Pricing unavailable');
         const prices = await res.json();
+        const pricedTripsData = addTripPricesToTrips(tripsData, prices);
         setTripPrices(prices);
+        setTripsData(pricedTripsData);
         setActiveStep((s) => Math.min(s + 1, 3));
       } catch {
         setSubmitError('Could not calculate trip pricing. Please try again.');
@@ -155,7 +188,8 @@ export default function App() {
 
   const handleSubmit = async () => {
     setSubmitError('');
-    const payload = { passenger, serviceData, tripsData: tripsData.map((t, i) => ({ ...t, price: tripPrices[i] })) };
+    const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices);
+    const payload = { passenger, serviceData, tripsData: pricedTripsData };
     try {
       console.log('Submitting payload:', payload); // Debug log
       const res = await fetch(`${import.meta.env.VITE_API_URL}/booking/`, {
@@ -349,15 +383,15 @@ export default function App() {
       {/* ── footer nav ── */}
       <Stack
         direction="row"
-        justifyContent="space-between"
         sx={{
+          justifyContent: 'space-between',
           mt: 4,
           pt: 2.5,
           borderTop: '1.5px solid',
           borderColor: 'divider',
         }}
       >
-        {activeStep > 0 ? (
+        {activeStep > 0 && (
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
@@ -370,8 +404,6 @@ export default function App() {
           >
             Back
           </Button>
-        ) : (
-          <Box />
         )}
 
         {activeStep < 3 ? (
@@ -380,6 +412,7 @@ export default function App() {
             endIcon={isPricingLoading ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
             onClick={handleNext}
             disabled={(activeStep === 2 && tripsData.length === 0) || isPricingLoading}
+            sx={{ ml: 'auto' }}
           >
             {isPricingLoading ? 'Calculating…' : 'Continue'}
           </Button>
@@ -390,6 +423,7 @@ export default function App() {
             endIcon={<CheckCircleOutlineIcon />}
             onClick={handleSubmit}
             disabled={!termsAccepted}
+            sx={{ ml: 'auto' }}
           >
             Submit Booking
           </Button>
@@ -438,26 +472,27 @@ function Shell({ children }) {
           <Stack
             direction="row"
             spacing={1}
-            alignItems="center"
-            justifyContent="center"
-            sx={{ mb: 0.5 }}
+          
+            sx={{ mb: 0.5, alignItems:'center' }}
           >
             <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             <Typography
               variant="h4"
-              sx={{ fontSize: '1.1rem', color: 'primary.main', fontWeight: 700, letterSpacing: '0.04em', alligItems: 'center' }}
+              sx={{ fontSize: '1.1rem', color: 'primary.main', lineHeight: 1 }}
+              align="center"
+
             >
               ATS BOOKING
             </Typography>
           </Stack>
-          {/* <Typography
-            variant="body2"
+          <Typography
+            variant="h5"
             color="text.secondary"
             align="center"
-            sx={{ mb: 3, fontSize: 12, letterSpacing: '0.04em' }}
+            sx={{ mb: 3, fontSize: '1.1em', letterSpacing: '0.04em' }}
           >
-            Non-Emergency Medical Transportation
-          </Typography> */}
+            Accessible Transportation Services
+          </Typography>
 
           {children}
         </Paper>

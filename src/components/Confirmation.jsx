@@ -167,9 +167,9 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
               >
                 Trip {i + 1}
               </Typography>
-              <Grid container spacing={1} sx={{ mb: 1 }}>
+              <Grid container spacing={1} sx={{ mb: 1, alignItems: 'center' }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Stack direction="row" spacing={0.5} >
                     <LocationOnIcon
                       sx={{ fontSize: 16, color: 'primary.main' }}
                     />
@@ -178,8 +178,8 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
+                <Grid size={{ xs: 12, sm: 6 }} sx= {{ alignItems: 'center' }}>
+                  <Stack direction="row" spacing={0.5} >
                     <FlagIcon
                       sx={{ fontSize: 16, color: 'secondary.main' }}
                     />
@@ -188,8 +188,8 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
+                <Grid size={{ xs: 12, sm: 6 }} sx= {{ alignItems: 'center' }}>
+                  <Stack direction="row" spacing={0.5} >
                     <CalendarTodayIcon
                       sx={{ fontSize: 16, color: 'text.secondary' }}
                     />
@@ -198,8 +198,8 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
+                <Grid size={{ xs: 12, sm: 6 }} sx= {{ alignItems: 'center' }}>
+                  <Stack direction="row" spacing={0.5} >
                     <AccessTimeIcon
                       sx={{ fontSize: 16, color: 'text.secondary' }}
                     />
@@ -222,10 +222,10 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    {tripPrices[i].distance} mi · {tripPrices[i].duration}
+                    Distance: {tripPrices[i].distance} mi · Time: {tripPrices[i].duration}
                   </Typography>
                   <Typography variant="body2" fontWeight={700} color="primary.main">
-                    ${tripPrices[i].price}
+                    Price: ${tripPrices[i].price}
                   </Typography>
                 </Box>
               )}

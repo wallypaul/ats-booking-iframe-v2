@@ -72,7 +72,7 @@ export default function PassengerDetails({ data, errors, onChange, onBlur }) {
       </Grid>
 
       <Grid size={{ xs: 12, sm: 6 }}>
-        <Field label="Alternative Phone" required>
+        <Field label="Alternative Phone" >
           <TextField fullWidth type="tel" inputMode="tel" placeholder="+1 (555) 000-0000"
             value={data.phone_2} onChange={updatePhone('phone_2')}
             onBlur={() => onBlur?.('phone_2')}
