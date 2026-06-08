@@ -444,7 +444,7 @@ export default function App() {
 }
 
 /* ═══ layout shell ═══ */
-function Shell({ children }) {
+export function Shell({ children, showBrand = true }) {
   return (
     <Box
       sx={{
@@ -468,31 +468,35 @@ function Shell({ children }) {
             boxShadow: '0 4px 28px rgba(28,26,22,0.06)',
           }}
         >
-          {/* brand */}
-          <Stack
-            direction="row"
-            spacing={1}
-          
-            sx={{ mb: 0.5, alignItems:'center' }}
-          >
-            <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-            <Typography
-              variant="h4"
-              sx={{ fontSize: '1.1rem', color: 'primary.main', lineHeight: 1 }}
-              align="center"
+          {showBrand && (
+            <>
+              {/* brand */}
+              <Stack
+                direction="row"
+                spacing={1}
+              
+                sx={{ mb: 0.5, alignItems:'center' }}
+              >
+                <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                <Typography
+                  variant="h4"
+                  sx={{ fontSize: '1.1rem', color: 'primary.main', lineHeight: 1 }}
+                  align="center"
 
-            >
-              ATS BOOKING
-            </Typography>
-          </Stack>
-          <Typography
-            variant="h5"
-            color="text.secondary"
-            align="center"
-            sx={{ mb: 3, fontSize: '1.1em', letterSpacing: '0.04em' }}
-          >
-            Accessible Transportation Services
-          </Typography>
+                >
+                  ATS BOOKING
+                </Typography>
+              </Stack>
+              <Typography
+                variant="h5"
+                color="text.secondary"
+                align="center"
+                sx={{ mb: 3, fontSize: '1.1em', letterSpacing: '0.04em' }}
+              >
+                Accessible Transportation Services
+              </Typography>
+            </>
+          )}
 
           {children}
         </Paper>
