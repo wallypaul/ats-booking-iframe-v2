@@ -1,39 +1,26 @@
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
+import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import StatusCard from './StatusCard';
 
-const bull = (
-  <Box
-    component="span"
-    sx={{ display: 'inline-block', mx: '2px', transform: 'scale(0.8)' }}
-  >
-    •
-  </Box>
-);
-
-export default function PaymentCard() {
+export default function PaymentCard({ amount, onPay }) {
   return (
-    <Card sx={{ minWidth: 275 }}>
-      <CardContent>
-        <Typography gutterBottom sx={{ color: 'text.secondary', fontSize: 14 }}>
-          Please proceed to payment to complete your booking. You will receive a confirmation email with your itinerary and receipt once the payment is successful.
-        </Typography>
-        <Typography variant="h5" component="div">
-          be{bull}nev{bull}o{bull}lent
-        </Typography>
-        <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>adjective</Typography>
-        <Typography variant="body2">
-          well meaning and kindly.
-          <br />
-          {'"a benevolent smile"'}
-        </Typography>
-      </CardContent>
-      <CardActions>
-        <Button size="small">Learn More</Button>
-      </CardActions>
-    </Card>
+    <StatusCard
+      icon={<CreditCardOutlinedIcon />}
+      color="secondary"
+      statusLabel="Payment required"
+      title="Complete your payment"
+      description="Your booking has been approved. Please complete payment to confirm your reservation. You'll receive a confirmation email with your itinerary and receipt once payment is successful."
+    >
+      <Button
+        variant="contained"
+        color="secondary"
+        startIcon={<LockOutlinedIcon />}
+        onClick={onPay}
+        fullWidth
+      >
+        {amount ? `Pay ${amount} securely` : 'Pay securely'}
+      </Button>
+    </StatusCard>
   );
 }

@@ -1,36 +1,67 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
-import Input from '@mui/material/Input';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import InputAdornment from '@mui/material/InputAdornment';
+import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 
-const bull = (
-  <Box
-    component="span"
-    sx={{ display: 'inline-block', mx: '2px', transform: 'scale(0.8)' }}
-  >
-    •
-  </Box>
-);
+export default function InputBookingId({ onCheck, loading = false }) {
+  const [value, setValue] = useState('');
 
-export default function InputBookingId() {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onCheck?.(trimmed);
+  };
+
   return (
-    <Card sx={{ minWidth: 275 }}>
-      <CardContent>
-        <Typography gutterBottom sx={{ color: 'text.secondary', fontSize: 14 }}>
-            Please enter your booking id to check the status of your reservation. You can find your booking id in the confirmation email sent to you after making a reservation. If you have any questions or need assistance, please contact our customer support team.
-        </Typography>
-        <Input
-        sx
-         placeholder="Enter your booking id" 
-        />
+    <Box component="form" onSubmit={handleSubmit}>
+      <Typography
+        variant="body2"
+        sx={{ color: 'text.secondary', mb: 2.5, lineHeight: 1.6 }}
+      >
+        Enter your booking ID to check the status of your reservation. You can
+        find it in the confirmation email sent after you made your reservation.
+      </Typography>
 
-      </CardContent>
-      <CardActions>
-        <Button size="small">Check</Button>
-      </CardActions>
-    </Card>
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+        <TextField
+          fullWidth
+          size="medium"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="e.g. BK-12345678"
+          label="Booking ID"
+          helperText="Enter your booking ID to check the status."
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <ConfirmationNumberOutlinedIcon
+                    fontSize="small"
+                    sx={{ color: 'text.secondary' }}
+                  />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': { borderRadius: 2.5 },
+          }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          startIcon={<SearchIcon />}
+          disabled={!value.trim() || loading}
+          sx={{ mt: 1, py: 1.75, whiteSpace: 'nowrap' }}
+        >
+          Check
+        </Button>
+      </Box>
+    </Box>
   );
 }
