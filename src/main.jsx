@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme/theme';
 import App from './pages/App';
+import ConfirmationPage from './pages/Confirmation-page';
 
 const root = document.getElementById('root');
 
@@ -13,9 +14,8 @@ ReactDOM.createRoot(root).render(
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/book-online" replace />} />
-          <Route path="/confirmation" element={<App />} /> # Change to page where you track the booking
-          <Route path='/book-online' element={<App />} />
+          <Route path="/" element={<App />} />
+          <Route path="/confirmation" element={<ConfirmationPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
