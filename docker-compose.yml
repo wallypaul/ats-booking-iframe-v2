@@ -1,0 +1,12 @@
+services:
+  ats-booking:
+    build:
+      context: .
+      args:
+        # URL of the booking/distance backend API. Override per environment.
+        VITE_API_URL: ${VITE_API_URL:-http://34.148.97.95:8000}
+    image: ats-booking:latest
+    container_name: ats-booking
+    ports:
+      - "${PORT:-3000}:80"
+    restart: unless-stopped

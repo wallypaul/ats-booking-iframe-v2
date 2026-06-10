@@ -21,6 +21,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
+import { API_URL } from '../config';
+
 import PassengerDetails from '../components/PassengerDetails';
 import ServiceStep from '../components/ServiceStep';
 import TripsStep from '../components/TripsStep';
@@ -156,7 +158,7 @@ export default function App() {
       setSubmitError('');
       try {
         const payload = tripsData.map((t) => ({ origin: t.pick_up_address, destination: t.drop_off_address , service: serviceData.service , companion: serviceData.companion }));
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/distance/bulk/`, {
+        const res = await fetch(`${API_URL}/distance/bulk/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -192,7 +194,7 @@ export default function App() {
     const payload = { passenger, serviceData, tripsData: pricedTripsData };
     try {
       console.log('Submitting payload:', payload); // Debug log
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/booking/`, {
+      const res = await fetch(`${API_URL}/booking/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -478,8 +480,8 @@ export function Shell({ children }) {
             <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             <Typography
               variant="h4"
-              sx={{ fontSize: '1.1rem', color: 'primary.main', lineHeight: 1 }}
-              align="center"
+              sx={{ fontSize: '1.1rem', color: 'primary.main', lineHeight: 1,  letterSpacing: '0.06em', textAlign: 'center' }}
+             
 
             >
               ATS BOOKING
