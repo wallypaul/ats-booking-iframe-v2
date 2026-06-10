@@ -446,7 +446,7 @@ export default function App() {
 }
 
 /* ═══ layout shell ═══ */
-function Shell({ children }) {
+export function Shell({ children }) {
   return (
     <Box
       sx={{
