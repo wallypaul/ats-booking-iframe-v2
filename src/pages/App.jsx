@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import {
   Box,
   Container,
@@ -158,13 +159,8 @@ export default function App() {
       setSubmitError('');
       try {
         const payload = tripsData.map((t) => ({ origin: t.pick_up_address, destination: t.drop_off_address , service: serviceData.service , companion: serviceData.companion }));
-        const res = await fetch(`${API_URL}/distance/bulk/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('Pricing unavailable');
-        const prices = await res.json();
+        const res = await axios.post(`${API_URL}/distance/bulk/`, payload);
+        const prices = res.data;
         const pricedTripsData = addTripPricesToTrips(tripsData, prices);
         setTripPrices(prices);
         setTripsData(pricedTripsData);
@@ -194,13 +190,11 @@ export default function App() {
     const payload = { passenger, serviceData, tripsData: pricedTripsData };
     try {
       console.log('Submitting payload:', payload); // Debug log
-      const res = await fetch(`${API_URL}/booking/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const res = await axios.post(`${API_URL}/booking/`, payload, {
+        validateStatus: () => true,
       });
 
-      const body = await res.json();
+      const body = res.data;
 
       if (res.status === 201) {
         setBookingResult(body);
@@ -316,9 +310,9 @@ export default function App() {
             <Typography variant="h5" sx={{ mb: 1 }}>
               {bookingResult?.message || 'Booking Submitted'}
             </Typography>
-            {bookingResult?.id && (
+            {bookingResult?.ref && (
               <Typography color="text.secondary" sx={{ mb: 0.5, fontSize: 13 }}>
-                Reference #: <strong>{bookingResult.id}</strong>
+                Reference #: <strong>{bookingResult.ref}</strong>
               </Typography>
             )}
             <Typography color="text.secondary" sx={{ mb: 0.5 }}>
