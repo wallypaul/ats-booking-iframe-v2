@@ -5,6 +5,8 @@ services:
       args:
         # URL of the booking/distance backend API. Override per environment.
         VITE_API_URL: ${VITE_API_URL:-http://34.148.97.95:8000}
+        # Google Maps key for address autocomplete (baked in at build time).
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
     image: ats-booking:latest
     container_name: ats-booking
     ports:

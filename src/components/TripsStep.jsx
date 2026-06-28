@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AddressField from './AddressField';
 import AddIcon from '@mui/icons-material/Add';
 import ReplayIcon from '@mui/icons-material/Replay';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -159,7 +160,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
           <Grid container spacing={2.5}>
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
               <Field label="pick_up_address Address" required>
-                <TextField
+                <AddressField
                   placeholder="123 Main St, City, State"
                   value={draft.pick_up_address}
                   onChange={updateDraft('pick_up_address')}
@@ -171,7 +172,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <Field label="drop_off_address Address" required>
-                <TextField
+                <AddressField
                   placeholder="456 Oak Ave, City, State"
                   value={draft.drop_off_address}
                   onChange={updateDraft('drop_off_address')}
