@@ -187,7 +187,7 @@ export default function App() {
   const handleSubmit = async () => {
     setSubmitError('');
     const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices);
-    const payload = { passenger, serviceData, tripsData: pricedTripsData };
+    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: 'iframe' };
     try {
       console.log('Submitting payload:', payload); // Debug log
       const res = await axios.post(`${API_URL}/booking/`, payload, {
