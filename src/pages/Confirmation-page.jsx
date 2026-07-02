@@ -4,6 +4,7 @@ import Stack from '@mui/material/Stack';
 import Fade from '@mui/material/Fade';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import Skeleton from '@mui/material/Skeleton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import components
@@ -17,13 +18,44 @@ import axios from 'axios';
 // Get the variable form VITE_API_URL in .env file
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+// Neutral placeholder shaped like StatusCard, shown while the lookup is in flight.
+function StatusCardSkeleton() {
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Skeleton variant="rectangular" height={4} />
+      <Box sx={{ p: { xs: 3, sm: 3.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Skeleton variant="circular" width={52} height={52} sx={{ flexShrink: 0 }} />
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="rounded" width={120} height={20} sx={{ mb: 0.75 }} />
+            <Skeleton variant="text" width="55%" sx={{ fontSize: '1.05rem' }} />
+          </Box>
+        </Box>
+        <Skeleton variant="text" width="100%" />
+        <Skeleton variant="text" width="92%" />
+        <Skeleton variant="text" width="68%" />
+      </Box>
+    </Box>
+  );
+}
+
 export default function ConfirmationPage() {
   const [bookingStatus, setBookingStatus] = useState('pending'); // 'pending' | 'payment' | 'confirmed' | 'invalid'
   const [bookingId, setBookingId] = useState('');
   const [booking, setBooking] = useState(null); // full booking payload from the API
+  const [loading, setLoading] = useState(false);
 
   const handleCheck = (id) => {
     setBookingId(id);
+    setLoading(true);
       const upperId = id.toUpperCase();
       // Fetch the booking status from the API using the booking ID. Backe expects a GET data in json format like { "bookingId": "12345" }
       
@@ -60,7 +92,8 @@ export default function ConfirmationPage() {
         console.error('Error fetching booking status:', error);
         // A 404 (or any failed lookup) means the booking ID was not found
         setBookingStatus('invalid');
-      });
+      })
+      .finally(() => setLoading(false));
 
 
     // Hardcoded for now — type "payment" or "
@@ -75,6 +108,7 @@ export default function ConfirmationPage() {
   const handleReset = () => {
     setBookingId('');
     setBooking(null);
+    setLoading(false);
   };
 
   return (
@@ -115,10 +149,16 @@ export default function ConfirmationPage() {
               </Button>
             </Stack>
 
-            {bookingStatus === 'pending' && <PendingApprovalCard booking={booking} />}
-            {bookingStatus === 'payment' && <PaymentCard />}
-            {bookingStatus === 'confirmed' && <ConfirmedCard />}
-            {bookingStatus === 'invalid' && <InvalidBookingIdCard />}
+            {loading ? (
+              <StatusCardSkeleton />
+            ) : (
+              <>
+                {bookingStatus === 'pending' && <PendingApprovalCard booking={booking} />}
+                {bookingStatus === 'payment' && <PaymentCard />}
+                {bookingStatus === 'confirmed' && <ConfirmedCard />}
+                {bookingStatus === 'invalid' && <InvalidBookingIdCard />}
+              </>
+            )}
           </Box>
         </Fade>
       )}

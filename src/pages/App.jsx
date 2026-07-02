@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Box,
@@ -12,6 +12,8 @@ import {
   Fade,
   Stack,
   Chip,
+  IconButton,
+  Tooltip,
   Snackbar,
   Alert,
   CircularProgress,
@@ -21,8 +23,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 
-import { API_URL } from '../config';
+import { API_URL, ATS } from '../config';
 
 import PassengerDetails from '../components/PassengerDetails';
 import ServiceStep from '../components/ServiceStep';
@@ -84,6 +88,7 @@ export default function App() {
   const [submitted, setSubmitted] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
   const [submitError, setSubmitError] = useState('');
+  const [refCopied, setRefCopied] = useState(false);
 
   // ── form data ──
   const [passenger, setPassenger] = useState({ ...INITIAL_PASSENGER });
@@ -91,6 +96,19 @@ export default function App() {
 
   const [serviceData, setServiceData] = useState({ ...INITIAL_SERVICE });
   const [serviceErrors, setServiceErrors] = useState({});
+
+  // Service levels this iframe (→ its payer) offers, resolved by iframe_uuid.
+  const [services, setServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get(`${ATS.apiBase}/distance/iframe/services/`, { params: { iframe_uuid: ATS.iframeUuid } })
+      .then((res) => setServices(res.data?.services || []))
+      .catch(() => setServicesError(true))
+      .finally(() => setServicesLoading(false));
+  }, []);
 
   const [tripsData, setTripsData] = useState([]);
   const [tripPrices, setTripPrices] = useState([]);
@@ -158,9 +176,20 @@ export default function App() {
       setIsPricingLoading(true);
       setSubmitError('');
       try {
-        const payload = tripsData.map((t) => ({ origin: t.pick_up_address, destination: t.drop_off_address , service: serviceData.service , companion: serviceData.companion }));
-        const res = await axios.post(`${API_URL}/distance/bulk/`, payload);
-        const prices = res.data;
+        // One quote per trip against the iframe endpoint; backend attributes
+        // it to this iframe's payer via iframe_uuid and prices at service_level.
+        const prices = await Promise.all(
+          tripsData.map((t) =>
+            axios
+              .post(`${ATS.apiBase}/distance/iframe/`, {
+                iframe_uuid: ATS.iframeUuid,
+                origin: t.pick_up_address,
+                destination: t.drop_off_address,
+                service_level: serviceData.service,
+              })
+              .then((r) => r.data)
+          )
+        );
         const pricedTripsData = addTripPricesToTrips(tripsData, prices);
         setTripPrices(prices);
         setTripsData(pricedTripsData);
@@ -187,7 +216,7 @@ export default function App() {
   const handleSubmit = async () => {
     setSubmitError('');
     const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices);
-    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: 'iframe' };
+    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, iframe_uuid: ATS.iframeUuid };
     try {
       console.log('Submitting payload:', payload); // Debug log
       const res = await axios.post(`${API_URL}/booking/`, payload, {
@@ -228,11 +257,41 @@ export default function App() {
   };
   const handleCloseError = () => setSubmitError('');
 
+  const copyRef = async () => {
+    const ref = bookingResult?.ref;
+    if (!ref) return;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(String(ref));
+      ok = true;
+    } catch {
+      // ponytail: fallback for iframes without clipboard-write permission
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = String(ref);
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    // Only claim "Copied!" if it actually landed — the ref stays selectable otherwise.
+    if (ok) {
+      setRefCopied(true);
+      setTimeout(() => setRefCopied(false), 1800);
+    }
+  };
+
   const handleReset = () => {
     setActiveStep(0);
     setSubmitted(false);
     setBookingResult(null);
     setSubmitError('');
+    setRefCopied(false);
     setPassenger({ ...INITIAL_PASSENGER });
     setPassengerErrors({});
     setServiceData({ ...INITIAL_SERVICE });
@@ -269,6 +328,9 @@ export default function App() {
               setServiceData(d);
               setServiceErrors({});
             }}
+            services={services}
+            servicesLoading={servicesLoading}
+            servicesError={servicesError}
           />
         );
       case 2:
@@ -278,6 +340,7 @@ export default function App() {
           <Confirmation
             passenger={passenger}
             serviceData={serviceData}
+            services={services}
             tripsData={tripsData}
             tripPrices={tripPrices}
             termsAccepted={termsAccepted}
@@ -311,9 +374,55 @@ export default function App() {
               {bookingResult?.message || 'Booking Submitted'}
             </Typography>
             {bookingResult?.ref && (
-              <Typography color="text.secondary" sx={{ mb: 0.5, fontSize: 13 }}>
-                Reference #: <strong>{bookingResult.ref}</strong>
-              </Typography>
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  mb: 2.5,
+                  px: 2,
+                  py: 1.25,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'text.secondary',
+                    }}
+                  >
+                    Reference #
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      fontFamily: 'monospace',
+                      lineHeight: 1.2,
+                      color: 'text.primary',
+                      userSelect: 'all',
+                    }}
+                  >
+                    {bookingResult.ref}
+                  </Typography>
+                </Box>
+                <Tooltip title={refCopied ? 'Copied!' : 'Copy reference'}>
+                  <IconButton
+                    onClick={copyRef}
+                    aria-label="Copy booking reference"
+                    sx={{ color: refCopied ? 'secondary.main' : 'primary.main' }}
+                  >
+                    {refCopied ? <CheckIcon /> : <ContentCopyIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
             )}
             <Typography color="text.secondary" sx={{ mb: 0.5 }}>
               Your {tripsData.length} trip{tripsData.length > 1 ? 's' : ''} for{' '}
@@ -326,6 +435,14 @@ export default function App() {
               Confirmation will be sent to{' '}
               <strong>{passenger.email}</strong>
             </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => window.location.href = '/confirmation'}
+              sx={{ mr: 2 }}
+            >
+              Confirmation page
+            </Button>
             <Button
               variant="contained"
               startIcon={<RestartAltIcon />}
@@ -407,7 +524,11 @@ export default function App() {
             variant="contained"
             endIcon={isPricingLoading ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
             onClick={handleNext}
-            disabled={(activeStep === 2 && tripsData.length === 0) || isPricingLoading}
+            disabled={
+              (activeStep === 1 && (servicesLoading || services.length === 0)) ||
+              (activeStep === 2 && tripsData.length === 0) ||
+              isPricingLoading
+            }
             sx={{ ml: 'auto' }}
           >
             {isPricingLoading ? 'Calculating…' : 'Continue'}
@@ -468,8 +589,7 @@ export function Shell({ children }) {
           <Stack
             direction="row"
             spacing={1}
-          
-            sx={{ mb: 0.5, alignItems:'center' }}
+            sx={{ mb: 0.5, alignItems: 'center', justifyContent: 'center' }}
           >
             <LocalHospitalIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             <Typography
