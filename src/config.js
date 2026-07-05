@@ -12,8 +12,20 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '
 // It's a PUBLIC identifier (client env vars ship to the browser), not a secret.
 // apiBase reuses VITE_API_URL — same backend, no second base-URL var needed.
 // ponytail: apiBase = API_URL, split into VITE_ATS_API_BASE only if they diverge.
+//
+// Identity is read from the iframe's OWN url query string first, so one build/
+// deployment serves many payers by embedding a different ?uuid=… — no rebuild and
+// no touching the server .env. The env vars stay as the default/fallback.
+//   <iframe src="https://book.ats.example/?uuid=8f3c…&source=acme-site">
+const params = new URLSearchParams(window.location.search);
+
 export const ATS = {
-  source: import.meta.env.VITE_ATS_SOURCE || 'iframe',
-  iframeUuid: import.meta.env.VITE_ATS_IFRAME_UUID || '',
+  source: params.get('source') || import.meta.env.VITE_ATS_SOURCE || 'iframe',
+  iframeUuid: params.get('uuid') || import.meta.env.VITE_ATS_IFRAME_UUID || '',
   apiBase: API_URL,
+  // Presentation, also driven by the embed url. URLSearchParams.get() already
+  // percent-decodes, so ?title=Acme%20Rides → "Acme Rides". React escapes these
+  // on render, so no XSS from the host's link.
+  title: params.get('title') || 'ATS BOOKING',
+  subtitle: params.get('subtitle') || 'Accessible Transportation Services',
 };

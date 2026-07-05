@@ -598,7 +598,7 @@ export function Shell({ children }) {
              
 
             >
-              ATS BOOKING
+              {ATS.title}
             </Typography>
           </Stack>
           <Typography
@@ -607,7 +607,7 @@ export function Shell({ children }) {
             align="center"
             sx={{ mb: 3, fontSize: '1.1em', letterSpacing: '0.04em' }}
           >
-            Accessible Transportation Services
+            {ATS.subtitle}
           </Typography>
 
           {children}
