@@ -3,32 +3,15 @@ import {
   Typography,
   Paper,
   Grid,
-  Chip,
   Divider,
   Stack,
   FormControlLabel,
   Checkbox,
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
-import AccessibleIcon from '@mui/icons-material/Accessible';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlagIcon from '@mui/icons-material/Flag';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-
-const SERVICES_MAP = {
-  2: {
-    label: 'Ambulatory',
-    tag: 'Walk-on',
-    icon: <DirectionsWalkIcon sx={{ fontSize: 28, color: 'primary.main' }} />,
-  },
-  3: {
-    label: 'Wheelchair',
-    tag: 'ADA Accessible',
-    icon: <AccessibleIcon sx={{ fontSize: 28, color: 'primary.main' }} />,
-  },
-};
 
 function SectionTitle({ children }) {
   return (
@@ -67,8 +50,8 @@ function Row({ label, value }) {
   );
 }
 
-export default function Confirmation({ passenger, serviceData, tripsData, tripPrices, termsAccepted, onTermsChange }) {
-  const svc = SERVICES_MAP[serviceData.service];
+export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, termsAccepted, onTermsChange }) {
+  const svc = services.find((s) => s.code === serviceData.service);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5  }}>
@@ -110,24 +93,7 @@ export default function Confirmation({ passenger, serviceData, tripsData, tripPr
             borderRadius: 2,
           }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
-            {svc?.icon}
-            <Box>
-              <Typography fontWeight={700}>{svc?.label}</Typography>
-              <Chip
-                label={svc?.tag}
-                size="small"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: 10,
-                  bgcolor: 'primary.main',
-                  color: '#fff',
-                  height: 20,
-                  mt: 0.3,
-                }}
-              />
-            </Box>
-          </Stack>
+          <Row label="Service" value={svc?.name} />
           {/* <Row
             label="Passengers"
             value={`${serviceData.passengers} passenger${serviceData.passengers > 1 ? 's' : ''}`}

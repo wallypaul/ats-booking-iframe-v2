@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AddressField from './AddressField';
 import AddIcon from '@mui/icons-material/Add';
 import ReplayIcon from '@mui/icons-material/Replay';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -54,12 +55,6 @@ export default function TripsStep({ tripsData, setTripsData }) {
   const [editIndex, setEditIndex] = useState(null);
   const [showReturnTripBtn, setShowReturnTripBtn] = useState(true);
   const [showAddAnotherTripBtn, setShowAddAnotherTripBtn] = useState(true);
-  const returnDraft = {
-      pick_up_address: draft.drop_off_address,
-      drop_off_address: draft.pick_up_address,
-      date: draft.date,
-      time: draft.time,
-    };
 
   const updateDraft = (field) => (e) =>
     setDraft((prev) => ({ ...prev, [field]: e.target.value }));
@@ -74,26 +69,6 @@ export default function TripsStep({ tripsData, setTripsData }) {
     return Object.keys(e).length === 0;
   };
 
-
-  const handleReturnTrip = () => {
-    
-    if (!validate()) return;
-
-    // const returnDraft = {
-    //   pick_up_address: draft.drop_off_address,
-    //   drop_off_address: draft.pick_up_address,
-    //   date: draft.date,
-    //   time: draft.time,
-    // };
-    setDraft(returnDraft);
-    setErrors({});
-    setMode('add');
-    if (mode === 'add') {
-      setMode('edit');
-    } else if (mode === 'edit') {
-      saveTrip();
-    }
-  };
 
   const saveTrip = () => {
     if (!validate()) return;
@@ -159,7 +134,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
           <Grid container spacing={2.5}>
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
               <Field label="pick_up_address Address" required>
-                <TextField
+                <AddressField
                   placeholder="123 Main St, City, State"
                   value={draft.pick_up_address}
                   onChange={updateDraft('pick_up_address')}
@@ -171,7 +146,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
               <Field label="drop_off_address Address" required>
-                <TextField
+                <AddressField
                   placeholder="456 Oak Ave, City, State"
                   value={draft.drop_off_address}
                   onChange={updateDraft('drop_off_address')}
@@ -375,12 +350,17 @@ export default function TripsStep({ tripsData, setTripsData }) {
           variant="outlined"
           startIcon={<ReplayIcon />}
           onClick={() => {
-            handleReturnTrip();
-            setShowReturnTripBtn(false);
-            setDraft({...returnDraft});
+            // swap pickup/dropoff of the viewed trip as editable defaults; date/time pre-filled, user can change any field
+            setDraft({
+              pick_up_address: trip.drop_off_address,
+              drop_off_address: trip.pick_up_address,
+              date: trip.date,
+              time: trip.time,
+            });
             setErrors({});
             setEditIndex(null);
             setMode('add');
+            setShowReturnTripBtn(false);
           }}
           fullWidth
           >
