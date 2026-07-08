@@ -438,7 +438,8 @@ export default function App() {
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={() => window.location.href = '/confirmation'}
+              // Keep the query string — it carries the iframe's uuid (and branding).
+              onClick={() => window.location.href = '/confirmation' + window.location.search}
               sx={{ mr: 2 }}
             >
               Confirmation page

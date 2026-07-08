@@ -8,6 +8,16 @@ A multi-step booking wizard built with **Vite**, **React 18**, and **Material UI
 - **Step 2 — Service & Needs**: Ambulatory or Wheelchair selection, number of passengers, companions, and comments
 - **Step 3 — Trips**: Add, edit, and remove trips with pagination. Each trip captures pick_up_address address, drop_off_address address, date, and appointment time
 - **Step 4 — Confirmation**: Full review of all entered data before final submission
+## Pagese natigation
+
+**1. Booking**: http://localhost:3000/?uuid=dd1c4215-… — the 4-step wizard (Passenger → Service → Trips → Confirm). Submit gives the success screen with the booking reference.
+
+2. **Booking → Confirmation**: the success screen's "Confirmation page" button goes to /confirmation and now keeps the query string, so the uuid (and any title/subtitle branding) survives.
+
+3. **Confirmation directly**: http://localhost:3000/confirmation?uuid=dd1c4215-… — the passenger enters their booking reference and sees the status card: pending → (once dispatch marks it accepted) the Square payment form with the server's amount → confirmed after paying. This is the link a patient returns to later, since payment only opens after approval.
+
+
+
 
 ## Prerequisites
 

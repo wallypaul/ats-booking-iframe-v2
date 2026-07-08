@@ -14,9 +14,8 @@ import ConfirmedCard from '../components/confirnation-components/ConfirmedCard';
 import InvalidBookingIdCard from '../components/confirnation-components/InvalidBookingIdCard';
 import InputBookingId from '../components/confirnation-components/InputBookingId';
 import { Shell } from './App';
-import axios from 'axios'; 
-// Get the variable form VITE_API_URL in .env file
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import axios from 'axios';
+import { API_URL } from '../config';
 
 // Neutral placeholder shaped like StatusCard, shown while the lookup is in flight.
 function StatusCardSkeleton() {
@@ -154,8 +153,20 @@ export default function ConfirmationPage() {
             ) : (
               <>
                 {bookingStatus === 'pending' && <PendingApprovalCard booking={booking} />}
-                {bookingStatus === 'payment' && <PaymentCard />}
-                {bookingStatus === 'confirmed' && <ConfirmedCard />}
+                {bookingStatus === 'payment' && (
+                  <PaymentCard
+                    booking={booking}
+                    onPaid={(paid) => {
+                      setBooking((b) => ({ ...b, ...paid }));
+                      setBookingStatus('confirmed');
+                    }}
+                  />
+                )}
+                {bookingStatus === 'confirmed' && (
+                  <ConfirmedCard
+                    amount={booking?.payment_status === 'paid' ? booking.amount || booking.total : null}
+                  />
+                )}
                 {bookingStatus === 'invalid' && <InvalidBookingIdCard />}
               </>
             )}
