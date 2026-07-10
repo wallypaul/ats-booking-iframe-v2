@@ -133,7 +133,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
 
           <Grid container spacing={2.5}>
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }} >
-              <Field label="pick_up_address Address" required>
+              <Field label="Pickup Address" required>
                 <AddressField
                   placeholder="123 Main St, City, State"
                   value={draft.pick_up_address}
@@ -145,7 +145,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
             </Grid>
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
-              <Field label="drop_off_address Address" required>
+              <Field label="Drop-off Address" required>
                 <AddressField
                   placeholder="456 Oak Ave, City, State"
                   value={draft.drop_off_address}
@@ -180,7 +180,7 @@ export default function TripsStep({ tripsData, setTripsData }) {
             </Grid>
 
             <Grid container spacing={0} size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
-              <Field label="pick_up_address Time" required>
+              <Field label="Pickup Time" required>
                 <TextField
                   type="time"
                   value={draft.time}
