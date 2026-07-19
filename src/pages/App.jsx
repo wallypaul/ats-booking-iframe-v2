@@ -49,6 +49,8 @@ const INITIAL_SERVICE = {
   // passengers: '',
   companion: 'none',
   comments: '',
+  toll: false,
+  weight: '',
 };
 const INITIAL_TRIP = {
   pick_up_address: '',
@@ -75,12 +77,15 @@ const normalizeDurationToHours = (duration) => {
   return Number.isNaN(parsed) ? duration : Math.ceil(parsed);
 };
 
-const addTripPricesToTrips = (trips, prices) =>
+const addTripPricesToTrips = (trips, prices, serviceLevel) =>
   trips.map((trip, i) => ({
     ...trip,
     price: prices[i]?.price,
     distance: prices[i]?.distance,
     duration: normalizeDurationToHours(prices[i]?.duration),
+    // The backend prices (and now requires) service_level per trip whenever
+    // the booking is attributed to a payer — this iframe's uuid always is.
+    service_level: serviceLevel,
   }));
 
 export default function App() {
@@ -186,11 +191,13 @@ export default function App() {
                 origin: t.pick_up_address,
                 destination: t.drop_off_address,
                 service_level: serviceData.service,
+                toll: serviceData.toll,
+                weight: serviceData.weight,
               })
               .then((r) => r.data)
           )
         );
-        const pricedTripsData = addTripPricesToTrips(tripsData, prices);
+        const pricedTripsData = addTripPricesToTrips(tripsData, prices, serviceData.service);
         setTripPrices(prices);
         setTripsData(pricedTripsData);
         setActiveStep((s) => Math.min(s + 1, 3));
@@ -215,7 +222,7 @@ export default function App() {
 
   const handleSubmit = async () => {
     setSubmitError('');
-    const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices);
+    const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices, serviceData.service);
     const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, iframe_uuid: ATS.iframeUuid };
     try {
       console.log('Submitting payload:', payload); // Debug log

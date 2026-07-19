@@ -2,11 +2,13 @@ import {
   Alert,
   Box,
   FormControl,
+  FormControlLabel,
   FormHelperText,
   Grid,
   MenuItem,
   Select,
   Skeleton,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -103,7 +105,30 @@ export default function ServiceStep({ data, errors, onChange, services, services
             </FormControl>
           </Field>
         </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }} sx={{ minWidth: 0 }}>
+          <Field label="Weight">
+            <TextField
+              type="number"
+              fullWidth
+              value={data.weight}
+              onChange={(e) => update('weight', e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: 'background.paper' } }}
+            />
+          </Field>
+        </Grid>
       </Grid>
+
+      {/* ── toll ── */}
+      <FormControlLabel
+        control={
+          <Switch
+            checked={data.toll}
+            onChange={(e) => update('toll', e.target.checked)}
+          />
+        }
+        label="Include toll"
+      />
 
       {/* ── comments ── */}
       <Field label="Special Instructions / Comments">
