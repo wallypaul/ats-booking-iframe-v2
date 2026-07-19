@@ -223,7 +223,8 @@ export default function App() {
   const handleSubmit = async () => {
     setSubmitError('');
     const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices, serviceData.service);
-    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, iframe_uuid: ATS.iframeUuid };
+    // Booking endpoint re-validates payer pricing same as /distance/iframe/ — needs service_level too.
+    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, iframe_uuid: ATS.iframeUuid, service_level: serviceData.service };
     try {
       console.log('Submitting payload:', payload); // Debug log
       const res = await axios.post(`${API_URL}/booking/`, payload, {
