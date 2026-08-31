@@ -36,12 +36,27 @@ function loadSquareSdk(environment) {
 export default function PaymentCard({ booking, onPaid }) {
   const containerRef = useRef(null);
   const cardRef = useRef(null);
-  const [state, setState] = useState('loading'); // 'loading' | 'ready' | 'no-config' | 'error'
+  // 'no-config'  the payer takes payment offline — a normal, calm outcome
+  // 'no-iframe'   this page doesn't know which iframe it is — an operator bug
+  // 'error'       the services call failed — network, or the API is down
+  const [state, setState] = useState('loading');
+  const [detail, setDetail] = useState('');
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
+  // A 502 means the charge MAY have landed. Re-enabling the button is how
+  // someone pays twice for one trip, so this latches the form off for good.
+  const [unconfirmed, setUnconfirmed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    // Without the uuid the services URL is /api/v2/iframe//services/, which is
+    // a 404 — indistinguishable from a dead API unless we check first. The uuid
+    // comes from ?uuid= on this page's own URL, so a direct visit to
+    // /confirmation without it lands here.
+    if (!ATS.iframeUuid) {
+      setState('no-iframe');
+      return undefined;
+    }
     // The payer's public Square fields (application_id, location_id, environment)
     // ride on the services call, resolved server-side from this iframe's uuid.
     axios
@@ -63,8 +78,12 @@ export default function PaymentCard({ booking, onPaid }) {
         cardRef.current = card;
         setState('ready');
       })
-      .catch(() => {
-        if (!cancelled) setState('error');
+      .catch((e) => {
+        if (cancelled) return;
+        setDetail(e.response?.status === 404
+          ? `No active iframe with uuid ${ATS.iframeUuid}`
+          : (e.message || 'The services call failed'));
+        setState('error');
       });
     return () => {
       cancelled = true;
@@ -88,7 +107,9 @@ export default function PaymentCard({ booking, onPaid }) {
       });
       onPaid?.(data); // {ref, status, payment_status, amount}
     } catch (e) {
-      // 402 = declined (Square's reason), 400 = not payable — both come as {error}.
+      // 402 = declined (Square's reason, retry with another card), 400 = not
+      // payable, 502 = we never got an answer and the charge may have landed.
+      if (e.response?.status === 502) setUnconfirmed(true);
       setPayError(e.response?.data?.error || e.message || 'Payment failed. Please try again.');
     } finally {
       setPaying(false);
@@ -108,6 +129,26 @@ export default function PaymentCard({ booking, onPaid }) {
     );
   }
 
+  // Only an operator can fix this, so it says what is wrong rather than
+  // apologising vaguely to a customer who cannot act on it.
+  if (state === 'no-iframe') {
+    return (
+      <StatusCard
+        icon={<CreditCardOutlinedIcon />}
+        color="secondary"
+        statusLabel="Not configured"
+        title="This booking page isn't linked to a payment account"
+        description="We can't take a card here yet. Please call us and we'll take payment over the phone."
+      >
+        <Alert severity="warning" sx={{ mb: 0 }}>
+          Operator: this page was opened without <code>?uuid=&lt;iframe uuid&gt;</code>, so it
+          cannot tell which payer it belongs to. Embed it as
+          <code> /confirmation?uuid=&lt;iframe uuid&gt;</code>.
+        </Alert>
+      </StatusCard>
+    );
+  }
+
   // booking.total is the server-computed sum from the lookup — never client math.
   const amountLabel = booking?.total ? `Pay $${booking.total} securely` : 'Pay securely';
 
@@ -120,27 +161,39 @@ export default function PaymentCard({ booking, onPaid }) {
       description="Your booking has been approved. Please complete payment to confirm your reservation. You'll receive a confirmation email with your itinerary and receipt once payment is successful."
     >
       {state === 'error' ? (
-        <Alert severity="warning">Payment is unavailable right now. Please try again later.</Alert>
+        <Alert severity="warning">
+          Payment is unavailable right now. Please try again later.
+          {detail && (
+            <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: '0.78rem', opacity: 0.8 }}>
+              {detail}
+            </Box>
+          )}
+        </Alert>
       ) : (
         <>
           {state === 'loading' && <Skeleton variant="rounded" height={44} sx={{ mb: 2 }} />}
           {/* Square card form attaches here; must be in the DOM before 'ready'. */}
-          <Box ref={containerRef} sx={{ display: state === 'ready' ? 'block' : 'none', mb: 2 }} />
+          <Box
+            ref={containerRef}
+            sx={{ display: state === 'ready' && !unconfirmed ? 'block' : 'none', mb: 2 }}
+          />
           {payError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity={unconfirmed ? 'warning' : 'error'} sx={{ mb: 2 }}>
               {payError}
             </Alert>
           )}
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={paying ? <CircularProgress size={16} color="inherit" /> : <LockOutlinedIcon />}
-            onClick={handlePay}
-            disabled={state !== 'ready' || paying}
-            fullWidth
-          >
-            {paying ? 'Processing…' : amountLabel}
-          </Button>
+          {!unconfirmed && (
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={paying ? <CircularProgress size={16} color="inherit" /> : <LockOutlinedIcon />}
+              onClick={handlePay}
+              disabled={state !== 'ready' || paying}
+              fullWidth
+            >
+              {paying ? 'Processing…' : amountLabel}
+            </Button>
+          )}
         </>
       )}
     </StatusCard>
