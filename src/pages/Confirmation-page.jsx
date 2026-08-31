@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Fade from '@mui/material/Fade';
@@ -53,9 +53,11 @@ export default function ConfirmationPage() {
   const [booking, setBooking] = useState(null); // full booking payload from the API
   const [loading, setLoading] = useState(false);
 
-  const handleCheck = (id) => {
+  const handleCheck = (id, { silent = false } = {}) => {
     setBookingId(id);
-    setLoading(true);
+    // A background poll leaves the current card on screen. Swapping it for the
+    // skeleton every few seconds reads as the page reloading under the user.
+    if (!silent) setLoading(true);
       const upperId = id.toUpperCase();
       // Fetch the booking status from the API using the booking ID. Backe expects a GET data in json format like { "bookingId": "12345" }
       
@@ -99,7 +101,7 @@ export default function ConfirmationPage() {
         // A 404 (or any failed lookup) means the booking ID was not found
         setBookingStatus('invalid');
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
 
 
     // Hardcoded for now — type "payment" or "
@@ -110,6 +112,34 @@ export default function ConfirmationPage() {
     // else if (lowered.includes('confirmed')) setBookingStatus('confirmed');
     // else setBookingStatus('pending');
   };
+
+  // Square settles a charge out of band, so 'processing' resolves on its own —
+  // but only if we ask again. Poll while it settles, stop on any terminal state,
+  // and give up after 90s into an instruction rather than an endless spinner.
+  const POLL_MS = 4000;
+  const GIVE_UP_MS = 90000;
+  const settlingSince = useRef(null);
+  const [stalled, setStalled] = useState(false);
+
+  useEffect(() => {
+    if (bookingStatus !== 'processing') {
+      settlingSince.current = null;
+      setStalled(false);
+      return undefined;
+    }
+    if (settlingSince.current === null) settlingSince.current = Date.now();
+    const id = setInterval(() => {
+      if (Date.now() - settlingSince.current >= GIVE_UP_MS) {
+        setStalled(true);
+        clearInterval(id);
+        return;
+      }
+      handleCheck(bookingId, { silent: true });   // re-reads payment_status; flips us out of here
+    }, POLL_MS);
+    return () => clearInterval(id);
+    // handleCheck is stable enough here: it only closes over setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingStatus, bookingId]);
 
   const handleReset = () => {
     setBookingId('');
@@ -173,7 +203,9 @@ export default function ConfirmationPage() {
                     }}
                   />
                 )}
-                {bookingStatus === 'processing' && <ProcessingCard booking={booking} />}
+                {bookingStatus === 'processing' && (
+                  <ProcessingCard booking={booking} stalled={stalled} />
+                )}
                 {bookingStatus === 'confirmed' && (
                   <ConfirmedCard
                     amount={booking?.payment_status === 'paid' ? booking.amount || booking.total : null}
