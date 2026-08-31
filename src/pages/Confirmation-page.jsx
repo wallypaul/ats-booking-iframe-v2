@@ -9,6 +9,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import components
 import PaymentCard from '../components/confirnation-components/PaymentCard';
+import ProcessingCard from '../components/confirnation-components/ProcessingCard';
 import PendingApprovalCard from '../components/confirnation-components/PendingApprovalCard';
 import ConfirmedCard from '../components/confirnation-components/ConfirmedCard';
 import InvalidBookingIdCard from '../components/confirnation-components/InvalidBookingIdCard';
@@ -47,7 +48,7 @@ function StatusCardSkeleton() {
 }
 
 export default function ConfirmationPage() {
-  const [bookingStatus, setBookingStatus] = useState('pending'); // 'pending' | 'payment' | 'confirmed' | 'invalid'
+  const [bookingStatus, setBookingStatus] = useState('pending'); // 'pending' | 'payment' | 'processing' | 'confirmed' | 'invalid'
   const [bookingId, setBookingId] = useState('');
   const [booking, setBooking] = useState(null); // full booking payload from the API
   const [loading, setLoading] = useState(false);
@@ -63,7 +64,13 @@ export default function ConfirmationPage() {
         const status = response.data.status; 
         setBooking(response.data); 
         if (response.status === 200) {
-          if (status === 'received') {
+          // Checked BEFORE status: a charged booking still sits at 'accepted'
+          // until Square's webhook settles it, so without this the card form
+          // would come back and invite a second payment for the same trip.
+          if (response.data.payment_status === 'processing') {
+            setBookingStatus('processing');
+          }
+          else if (status === 'received') {
             setBookingStatus('pending');
 
             }
@@ -158,10 +165,15 @@ export default function ConfirmationPage() {
                     booking={booking}
                     onPaid={(paid) => {
                       setBooking((b) => ({ ...b, ...paid }));
-                      setBookingStatus('confirmed');
+                      // The charge went through; the money is not settled yet.
+                      // Square's webhook is what makes this 'confirmed'.
+                      setBookingStatus(
+                        paid?.payment_status === 'paid' ? 'confirmed' : 'processing',
+                      );
                     }}
                   />
                 )}
+                {bookingStatus === 'processing' && <ProcessingCard booking={booking} />}
                 {bookingStatus === 'confirmed' && (
                   <ConfirmedCard
                     amount={booking?.payment_status === 'paid' ? booking.amount || booking.total : null}

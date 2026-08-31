@@ -39,6 +39,9 @@ export default function PaymentCard({ booking, onPaid }) {
   const [state, setState] = useState('loading'); // 'loading' | 'ready' | 'no-config' | 'error'
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
+  // A 502 means the charge MAY have gone through. Re-enabling the button is how
+  // someone pays twice for one trip, so this latches the form off for good.
+  const [unconfirmed, setUnconfirmed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,9 +89,12 @@ export default function PaymentCard({ booking, onPaid }) {
         ref: booking?.ref,
         source_id: result.token,
       });
-      onPaid?.(data); // {ref, status, payment_status, amount}
+      onPaid?.(data); // {ref, status, payment_status: 'processing', amount}
     } catch (e) {
-      // 402 = declined (Square's reason), 400 = not payable — both come as {error}.
+      // 402 = declined (Square's reason, safe to retry with another card),
+      // 400 = not payable, 502 = we never got an answer from Square.
+      // All three come back as {error}.
+      if (e.response?.status === 502) setUnconfirmed(true);
       setPayError(e.response?.data?.error || e.message || 'Payment failed. Please try again.');
     } finally {
       setPaying(false);
@@ -124,23 +130,30 @@ export default function PaymentCard({ booking, onPaid }) {
       ) : (
         <>
           {state === 'loading' && <Skeleton variant="rounded" height={44} sx={{ mb: 2 }} />}
-          {/* Square card form attaches here; must be in the DOM before 'ready'. */}
-          <Box ref={containerRef} sx={{ display: state === 'ready' ? 'block' : 'none', mb: 2 }} />
+          {/* Square card form attaches here; must be in the DOM before 'ready'.
+              Hidden once unconfirmed — offering a card again would risk a
+              second charge for a payment that may already have landed. */}
+          <Box
+            ref={containerRef}
+            sx={{ display: state === 'ready' && !unconfirmed ? 'block' : 'none', mb: 2 }}
+          />
           {payError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity={unconfirmed ? 'warning' : 'error'} sx={{ mb: 2 }}>
               {payError}
             </Alert>
           )}
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={paying ? <CircularProgress size={16} color="inherit" /> : <LockOutlinedIcon />}
-            onClick={handlePay}
-            disabled={state !== 'ready' || paying}
-            fullWidth
-          >
-            {paying ? 'Processing…' : amountLabel}
-          </Button>
+          {!unconfirmed && (
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={paying ? <CircularProgress size={16} color="inherit" /> : <LockOutlinedIcon />}
+              onClick={handlePay}
+              disabled={state !== 'ready' || paying}
+              fullWidth
+            >
+              {paying ? 'Processing…' : amountLabel}
+            </Button>
+          )}
         </>
       )}
     </StatusCard>
