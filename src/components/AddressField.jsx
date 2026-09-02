@@ -12,9 +12,37 @@ import { loadGoogleMaps } from '../loadGoogleMaps';
 // MUI TextField below; the TextField is now only the fallback for when Maps
 // fails to load (no key, offline), which is the same degradation as before.
 //
-// ponytail: the element's own chrome, not MUI's. Its internals are unreachable,
-// so matching the outlined look exactly would mean dropping back to the
-// AutocompleteSuggestion API and rendering suggestions in MUI ourselves.
+// That shadow root does not close off colour. Google publishes its Material
+// palette as --gmp-mat-color-* custom properties, and custom properties inherit
+// THROUGH the boundary. Left unset they fall back to Google's own defaults — a
+// pure #FFFFFF field with a blue focus ring — sitting beside MUI fields painted
+// #FFFEF9, which is what made this one input look like it changed colour.
+//
+// ponytail: colour, radius and font reach it; height and inner padding do not,
+// so the field can still sit a few px shorter than its neighbours. Closing that
+// last gap would mean dropping to the AutocompleteSuggestion API and rendering
+// the list in MUI ourselves — a lot of code for a few pixels.
+
+// Google's Material tokens, mapped onto this form's theme. Names are the ones
+// Google actually publishes — an unknown custom property is ignored in silence,
+// so a plausible-looking guess here would leave the field styled by Google and
+// look like the fix simply had no effect.
+const GMP_THEME = (theme) => ({
+  // The field and the suggestion list, matching MuiSelect/MuiOutlinedInput.
+  '--gmp-mat-color-surface': theme.palette.background.paper,
+  '--gmp-mat-color-on-surface': theme.palette.text.primary,
+  // Placeholder, and the secondary line under each suggestion.
+  '--gmp-mat-color-on-surface-variant': theme.palette.text.secondary,
+  // The resting border. NOT --gmp-mat-color-outline, which is not a real token.
+  '--gmp-mat-color-outline-decorative': theme.palette.divider,
+  // Focus ring and active accent — Google's blue otherwise.
+  '--gmp-mat-color-primary': theme.palette.primary.main,
+  // The wash behind a hovered or keyboard-highlighted suggestion.
+  '--gmp-mat-color-secondary-container': theme.palette.background.default,
+  '--gmp-mat-color-on-secondary-container': theme.palette.text.primary,
+  '--gmp-mat-font-family': theme.typography.fontFamily,
+});
+
 export default function AddressField({ value, onChange, placeholder, error, helperText, ...props }) {
   const hostRef = useRef(null);
   const elRef = useRef(null);
@@ -29,7 +57,6 @@ export default function AddressField({ value, onChange, placeholder, error, help
         if (cancelled || !hostRef.current) return;
         // US-only: the rest of the form already assumes it (US phone regex, states).
         const el = new PlaceAutocompleteElement({ includedRegionCodes: ['us'] });
-        el.style.width = '100%';
         el.placeholder = placeholder;   // honoured by the element if it supports it
         el.value = value ?? '';
 
@@ -69,7 +96,29 @@ export default function AddressField({ value, onChange, placeholder, error, help
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box ref={hostRef} sx={{ display: ready ? 'block' : 'none' }} />
+      <Box
+        ref={hostRef}
+        sx={(theme) => ({
+          display: ready ? 'block' : 'none',
+          // Custom properties inherit through the shadow boundary, so setting
+          // them on this wrapper reaches the element's internals.
+          ...GMP_THEME(theme),
+          // Geometry does not inherit, but the element's own box is styleable
+          // from outside — only its shadow internals are closed. This is what
+          // squares the 10px corners of every neighbouring field.
+          '& gmp-place-autocomplete': {
+            width: '100%',
+            // 10px: the radius theme.js gives MuiSelect and the inputs.
+            borderRadius: '10px',
+          },
+          // An invalid field reads as invalid here too: the element draws its
+          // border from the outline token, so pointing that at error.main is
+          // the whole treatment.
+          ...(error && {
+            '--gmp-mat-color-outline-decorative': theme.palette.error.main,
+          }),
+        })}
+      />
       {!ready && (
         <TextField
           value={value}
