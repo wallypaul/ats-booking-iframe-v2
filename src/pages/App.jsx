@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { toAmount } from '../money';
 import {
   Box,
   Container,
@@ -201,7 +202,9 @@ export default function App() {
                 toll: serviceData.toll,
                 weight: serviceData.weight,
               })
-              .then((r) => r.data)
+              // price arrives as a Decimal string; make it a number here so
+              // every consumer can do arithmetic with it.
+              .then((r) => ({ ...r.data, price: toAmount(r.data?.price) }))
           )
         );
         const pricedTripsData = addTripPricesToTrips(trips, prices, serviceData.service);

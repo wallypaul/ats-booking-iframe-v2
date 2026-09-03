@@ -12,6 +12,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlagIcon from '@mui/icons-material/Flag';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { toAmount, formatAmount } from '../money';
 
 function SectionTitle({ children }) {
   return (
@@ -191,7 +192,7 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
                     Distance: {tripPrices[i].distance} mi · Time: {tripPrices[i].duration}
                   </Typography>
                   <Typography variant="body2" fontWeight={700} color="primary.main">
-                    Price: ${tripPrices[i].price}
+                    Price: ${formatAmount(tripPrices[i].price)}
                   </Typography>
                 </Box>
               )}
@@ -214,7 +215,7 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
                 Total Estimated Price
               </Typography>
               <Typography variant="body1" fontWeight={700} color="primary.main">
-                ${tripPrices.reduce((sum, p) => sum + (p.price || 0), 0)}
+                ${formatAmount(tripPrices.reduce((sum, p) => sum + toAmount(p.price), 0))}
               </Typography>
             </Box>
           )}
