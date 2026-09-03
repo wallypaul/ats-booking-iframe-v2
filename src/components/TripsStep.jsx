@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useImperativeHandle, useState } from 'react';
 import {
   Box,
   Button,
@@ -47,7 +47,7 @@ function Field({ label, required, children }) {
   );
 }
 
-export default function TripsStep({ tripsData, setTripsData }) {
+export default function TripsStep({ tripsData, setTripsData, ref }) {
   const [draft, setDraft] = useState({ ...EMPTY_TRIP });
   const [errors, setErrors] = useState({});
   const [page, setPage] = useState(0);
@@ -70,22 +70,21 @@ export default function TripsStep({ tripsData, setTripsData }) {
   };
 
 
+  // Returns the resulting trips array, or null when the form is incomplete.
+  // The caller needs the array: setTripsData is async, so a parent that saved
+  // through us would otherwise price the list as it was before the save.
   const saveTrip = () => {
-    if (!validate()) return;
-    if (editIndex !== null) {
-      const next = [...tripsData];
-      next[editIndex] = { ...draft };
-      setTripsData(next);
-      setPage(editIndex);
-      setEditIndex(null);
-    } else {
-      const next = [...tripsData, { ...draft }];
-      setTripsData(next);
-      setPage(next.length - 1);
-    }
+    if (!validate()) return null;
+    const next = [...tripsData];
+    if (editIndex !== null) next[editIndex] = { ...draft };
+    else next.push({ ...draft });
+    setTripsData(next);
+    setPage(editIndex ?? next.length - 1);
+    setEditIndex(null);
     setDraft({ ...EMPTY_TRIP });
     setErrors({});
     setMode('list');
+    return next;
   };
 
   const startEdit = (i) => {
@@ -112,6 +111,21 @@ export default function TripsStep({ tripsData, setTripsData }) {
       setPage(Math.min(page, next.length - 1));
     }
   };
+
+  // Continue lives in the parent's footer, the half-filled trip lives here. An
+  // open form was dropped silently on Continue — worst with Add Return Trip,
+  // where the form arrives pre-filled and looks saved already.
+  useImperativeHandle(ref, () => ({
+    commit: () => {
+      if (mode === 'list') return tripsData;
+      // A form opened by accident and never touched is not data to save.
+      if (Object.values(draft).every((v) => !v)) {
+        cancelForm();
+        return tripsData;
+      }
+      return saveTrip();
+    },
+  }));
 
   const isEditing = mode === 'edit';
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   Box,
@@ -117,6 +117,8 @@ export default function App() {
 
   const [tripsData, setTripsData] = useState([]);
   const [tripPrices, setTripPrices] = useState([]);
+  // Lets Continue save whatever trip form is still open in TripsStep.
+  const tripsFormRef = useRef(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -178,13 +180,18 @@ export default function App() {
   const handleNext = async () => {
     if (!validateStep()) return;
     if (activeStep === 2) {
+      // Continue also means "save the trip I'm looking at": an open, filled form
+      // (Add Return Trip, Add Another Trip, Edit) was never committed, so it was
+      // neither priced nor submitted. null = incomplete, TripsStep shows why.
+      const trips = tripsFormRef.current ? tripsFormRef.current.commit() : tripsData;
+      if (!trips) return;
       setIsPricingLoading(true);
       setSubmitError('');
       try {
         // One quote per trip against the iframe endpoint; backend attributes
         // it to this iframe's payer via iframe_uuid and prices at service_level.
         const prices = await Promise.all(
-          tripsData.map((t) =>
+          trips.map((t) =>
             axios
               .post(`${ATS.apiBase}/distance/iframe/`, {
                 iframe_uuid: ATS.iframeUuid,
@@ -197,7 +204,7 @@ export default function App() {
               .then((r) => r.data)
           )
         );
-        const pricedTripsData = addTripPricesToTrips(tripsData, prices, serviceData.service);
+        const pricedTripsData = addTripPricesToTrips(trips, prices, serviceData.service);
         setTripPrices(prices);
         setTripsData(pricedTripsData);
         setActiveStep((s) => Math.min(s + 1, 3));
@@ -342,7 +349,7 @@ export default function App() {
           />
         );
       case 2:
-        return <TripsStep tripsData={tripsData} setTripsData={setTripsData} />;
+        return <TripsStep ref={tripsFormRef} tripsData={tripsData} setTripsData={setTripsData} />;
       case 3:
         return (
           <Confirmation
