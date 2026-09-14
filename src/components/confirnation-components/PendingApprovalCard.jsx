@@ -11,7 +11,7 @@ export default function PendingApprovalCard({ booking }) {
   const greeting = fullName ? `Hey ${fullName},` : 'Hey,';
   const description = `we've received your trip request and our team is now checking whether we can make it happen. We'll let you know within 12 hours${
     phone ? `, with a notification sent to ${phone},` : ''
-  } once your trip is approved.`;
+  } once your trip is approved. For any assistance, please reach out to our support team at 603-290-4979.`;
 
   return (
     <StatusCard
