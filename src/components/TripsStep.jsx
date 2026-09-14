@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import AddressField from './AddressField';
+import { HHMM, isPastInNY, minTimeFor, nyNow } from '../nyTime';
 import AddIcon from '@mui/icons-material/Add';
 import ReplayIcon from '@mui/icons-material/Replay';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -65,6 +66,12 @@ export default function TripsStep({ tripsData, setTripsData, ref }) {
     if (!draft.drop_off_address.trim()) e.drop_off_address = 'drop_off_address address is required';
     if (!draft.date) e.date = 'Date is required';
     if (!draft.time) e.time = 'Time is required';
+    else if (!HHMM.test(draft.time.slice(0, 5))) e.time = 'Enter the time as HH:MM';
+    // `min` on the inputs is only a hint — typed values and some browsers ignore it.
+    // This is the check that actually blocks a past pickup.
+    else if (draft.date && isPastInNY(draft.date, draft.time)) {
+      e.time = 'That time has already passed in New York (ET)';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -178,17 +185,7 @@ export default function TripsStep({ tripsData, setTripsData, ref }) {
                   onChange={updateDraft('date')}
                   error={!!errors.date}
                   helperText={errors.date}
-                  slotProps={{
-                    htmlInput: {
-                      min: (() => {
-                      const today = new Date();
-                      const yyyy = today.getFullYear();
-                      const mm = String(today.getMonth() + 1).padStart(2, '0');
-                      const dd = String(today.getDate()).padStart(2, '0');
-                      return `${yyyy}-${mm}-${dd}`;
-                        })(),
-                    },
-                  }}
+                  slotProps={{ htmlInput: { min: nyNow().date } }}
                 />
               </Field>
             </Grid>
@@ -200,7 +197,8 @@ export default function TripsStep({ tripsData, setTripsData, ref }) {
                   value={draft.time}
                   onChange={updateDraft('time')}
                   error={!!errors.time}
-                  helperText={errors.time}
+                  helperText={errors.time || 'New York time (ET)'}
+                  slotProps={{ htmlInput: { min: minTimeFor(draft.date) } }}
                 />
               </Field>
             </Grid>
