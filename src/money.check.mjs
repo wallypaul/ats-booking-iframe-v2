@@ -18,9 +18,14 @@ assert.equal(sum([undefined, null, '', 'n/a', '66.00']), '66.00', 'missing price
 assert.equal(formatAmount('66'), '66.00', 'display keeps cents');
 
 // Confirmation must run every price through these, never bare `+`.
+// The total itself is now computed by deadhead.js's estimateTotal (it folds in
+// the deadhead charge too), which must coerce each price before adding.
 const conf = readFileSync(new URL('./components/Confirmation.jsx', import.meta.url), 'utf8');
 assert.ok(!/sum \+ \(?p\.price/.test(conf), 'the total must coerce each price before adding');
-assert.match(conf, /reduce\(\(sum, p\) => sum \+ toAmount\(p\.price\), 0\)/);
+assert.match(conf, /estimateTotal\(tripsData, tripPrices\)/);
+
+const deadhead = readFileSync(new URL('./deadhead.js', import.meta.url), 'utf8');
+assert.match(deadhead, /reduce\(\(sum, p\) => sum \+ toAmount\(p\?\.price\), 0\)/);
 
 // ...and the prices in state must already be numbers, from the API boundary.
 const app = readFileSync(new URL('./pages/App.jsx', import.meta.url), 'utf8');

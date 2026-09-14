@@ -12,7 +12,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlagIcon from '@mui/icons-material/Flag';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { toAmount, formatAmount } from '../money';
+import { formatAmount } from '../money';
+import { deadheadFor, estimateTotal } from '../deadhead';
 
 function SectionTitle({ children }) {
   return (
@@ -52,6 +53,7 @@ function Row({ label, value }) {
 }
 
 export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, termsAccepted, onTermsChange }) {
+  const deadhead = deadheadFor(tripsData, tripPrices);
   const svc = services.find((s) => s.code === serviceData.service);
 
   return (
@@ -199,23 +201,24 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
               {i < tripsData.length - 1 && <Divider sx={{ my: 1.5 }} />}
             </Box>
           ))}
-          {tripPrices.length > 1 && (
-            <Box
-              sx={{
-                mt: 1.5,
-                pt: 1.5,
-                borderTop: '2px solid',
-                borderColor: 'divider',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="body2" fontWeight={600}>
-                Total Estimated Price
+          {deadhead && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              <Box>
+                <Typography variant="body2" fontWeight={600}>Deadhead mileage</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {deadhead.miles} mi from our base to your first pickup (Trip {deadhead.index + 1}) — charged once per booking
+                </Typography>
+              </Box>
+              <Typography variant="body2" fontWeight={700} color="primary.main">
+                ${formatAmount(deadhead.price)}
               </Typography>
+            </Box>
+          )}
+          {(tripPrices.length > 1 || deadhead) && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '2px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" fontWeight={600}>Total Estimated Price</Typography>
               <Typography variant="body1" fontWeight={700} color="primary.main">
-                ${formatAmount(tripPrices.reduce((sum, p) => sum + toAmount(p.price), 0))}
+                ${formatAmount(estimateTotal(tripsData, tripPrices))}
               </Typography>
             </Box>
           )}
