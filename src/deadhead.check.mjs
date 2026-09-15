@@ -36,6 +36,18 @@ assert.equal(estimateTotal(trips, noBase), 112.5);
 const outOnly = prices.map((p) => ({ ...p, return_deadhead_price: '0', return_deadhead_miles: '0' }));
 assert.deepEqual(deadheadFor(trips, outOnly), { index: 1, miles: 4, price: 8 });
 
+// Float dust: 14.80 + 42.90 is 57.699999999999996 in binary floating point, and
+// that whole string once rendered on a booking confirmation. Both figures come
+// from the server already at 2dp, so the sum must be too.
+const dusty = [{
+  price: '37.50',
+  deadhead_miles: '14.80', deadhead_price: '14.80',
+  return_deadhead_miles: '42.90', return_deadhead_price: '42.90',
+}];
+assert.deepEqual(deadheadFor(one, dusty), { index: 0, miles: 57.7, price: 57.7 });
+assert.equal(String(deadheadFor(one, dusty).miles), '57.7', 'no 57.699999999999996');
+assert.equal(estimateTotal(one, dusty), 95.2, '37.50 + 57.70');
+
 // An older backend without the fields → no row, legs only.
 assert.equal(deadheadFor(trips, [{ price: 1 }, { price: 2 }, { price: 3 }]), null);
 assert.equal(estimateTotal([], []), 0);

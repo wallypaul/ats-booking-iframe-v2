@@ -1,4 +1,4 @@
-import { toAmount } from './money.js';
+import { round2, toAmount } from './money.js';
 
 // Mirrors the server rule (payers/deadhead/ordering.py): earliest by date then
 // time pays the run OUT of the base, latest pays the run HOME from the last
@@ -31,11 +31,19 @@ export function deadheadFor(trips, prices) {
   const backPrice = back === null ? 0 : toAmount(prices[back]?.return_deadhead_price);
   const price = outPrice + backPrice;
   if (price <= 0) return null;
-  const miles =
+  // Rounded, not raw: adding two two-decimal figures as binary floats gives
+  // 14.80 + 42.90 === 57.699999999999996, and that lands verbatim on a booking
+  // confirmation. Both operands are already 2dp from the server, so rounding
+  // here loses nothing.
+  const miles = round2(
     (out === null ? 0 : toAmount(prices[out]?.deadhead_miles)) +
-    (back === null ? 0 : toAmount(prices[back]?.return_deadhead_miles));
-  return { index: out ?? back, miles, price };
+    (back === null ? 0 : toAmount(prices[back]?.return_deadhead_miles)),
+  );
+  return { index: out ?? back, miles, price: round2(price) };
 }
 
 export const estimateTotal = (trips, prices) =>
-  prices.reduce((sum, p) => sum + toAmount(p?.price), 0) + (deadheadFor(trips, prices)?.price ?? 0);
+  round2(
+    prices.reduce((sum, p) => sum + toAmount(p?.price), 0)
+    + (deadheadFor(trips, prices)?.price ?? 0),
+  );
