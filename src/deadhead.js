@@ -1,45 +1,59 @@
 import { round2, toAmount } from './money.js';
 
-// Mirrors the server rule (payers/deadhead/ordering.py): earliest by date then
-// time pays the run OUT of the base, latest pays the run HOME from the last
-// drop-off. The server decides authoritatively at submit; this only previews it.
-function legIndex(trips, pick) {
-  let best = null;
+/**
+ * `{date: [firstIndex, lastIndex]}` — the two legs that pay deadhead on each day.
+ *
+ * Mirrors the server rule (payers/deadhead/ordering.py). Deadhead is charged PER
+ * DAY, because that is what the van does: out of the base each morning, home
+ * each evening. An itinerary running Wednesday and Thursday makes four empty
+ * runs, and the two in the middle — Wednesday's drive home and Thursday's drive
+ * out — are usually the long ones, since the day ends wherever the member was
+ * dropped rather than next door to the base.
+ *
+ * A day with one leg maps it to both: driven out to, driven home from.
+ * The server decides authoritatively at submit; this only previews it.
+ */
+function legsByDay(trips) {
+  const days = new Map();
   trips.forEach((t, i) => {
     if (!t.date || !t.time) return;
-    if (best === null || pick(`${t.date}T${t.time}`, `${trips[best].date}T${trips[best].time}`)) {
-      best = i;
+    const day = days.get(t.date);
+    if (!day) {
+      days.set(t.date, [i, i]);
+      return;
     }
+    if (t.time < trips[day[0]].time) day[0] = i;
+    if (t.time > trips[day[1]].time) day[1] = i;
   });
-  return best;
+  return days;
 }
-
-const firstLegIndex = (trips) => legIndex(trips, (when, best) => when < best);
-const lastLegIndex = (trips) => legIndex(trips, (when, best) => when > best);
 
 /**
  * The deadhead charge for this itinerary, or null when there is none to show.
  *
- * One figure covering both empty runs — out to the first pickup and home from
- * the last drop-off. They are the same charge at the same rate, and showing a
- * rider two deadhead lines reads as being billed twice.
+ * ONE figure covering every empty run the booking makes — each day's drive out
+ * and drive home. They are the same charge at the same rate, and showing a rider
+ * a separate line per run reads as being billed over and over.
+ *
+ * `index` is the first leg that carries any of it, for the "Trip N" reference.
  */
 export function deadheadFor(trips, prices) {
-  const out = firstLegIndex(trips);
-  const back = lastLegIndex(trips);
-  const outPrice = out === null ? 0 : toAmount(prices[out]?.deadhead_price);
-  const backPrice = back === null ? 0 : toAmount(prices[back]?.return_deadhead_price);
-  const price = outPrice + backPrice;
+  let price = 0;
+  let miles = 0;
+  let index = null;
+  for (const [out, back] of legsByDay(trips).values()) {
+    const outPrice = toAmount(prices[out]?.deadhead_price);
+    const backPrice = toAmount(prices[back]?.return_deadhead_price);
+    if (index === null && (outPrice > 0 || backPrice > 0)) index = outPrice > 0 ? out : back;
+    price += outPrice + backPrice;
+    miles += toAmount(prices[out]?.deadhead_miles)
+      + toAmount(prices[back]?.return_deadhead_miles);
+  }
   if (price <= 0) return null;
-  // Rounded, not raw: adding two two-decimal figures as binary floats gives
+  // Rounded, not raw: adding two-decimal figures as binary floats gives
   // 14.80 + 42.90 === 57.699999999999996, and that lands verbatim on a booking
-  // confirmation. Both operands are already 2dp from the server, so rounding
-  // here loses nothing.
-  const miles = round2(
-    (out === null ? 0 : toAmount(prices[out]?.deadhead_miles)) +
-    (back === null ? 0 : toAmount(prices[back]?.return_deadhead_miles)),
-  );
-  return { index: out ?? back, miles, price: round2(price) };
+  // confirmation. Every operand is already 2dp, so rounding here loses nothing.
+  return { index, miles: round2(miles), price: round2(price) };
 }
 
 export const estimateTotal = (trips, prices) =>

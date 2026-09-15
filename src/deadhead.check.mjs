@@ -4,10 +4,11 @@
 import assert from 'node:assert/strict';
 import { deadheadFor, estimateTotal } from './deadhead.js';
 
+// Three legs on three different DAYS, so each pays its own way out and home.
 const trips = [
   { date: '2026-09-16', time: '09:00' },   // A
-  { date: '2026-09-15', time: '14:30' },   // B — earliest, pays the run out
-  { date: '2026-09-17', time: '08:00' },   // C — latest, pays the run home
+  { date: '2026-09-15', time: '14:30' },   // B
+  { date: '2026-09-17', time: '08:00' },   // C
 ];
 const prices = trips.map(() => ({
   price: 37.5,
@@ -15,17 +16,25 @@ const prices = trips.map(() => ({
   return_deadhead_miles: '5', return_deadhead_price: '10.00',
 }));
 
-assert.deepEqual(deadheadFor(trips, prices), { index: 1, miles: 9, price: 18 });
-assert.equal(estimateTotal(trips, prices), 130.5, '3 legs + out + back');
+// 3 days * (4 + 5) mi and * (8 + 10).
+assert.deepEqual(deadheadFor(trips, prices), { index: 0, miles: 27, price: 54 });
+assert.equal(estimateTotal(trips, prices), 166.5, '3 legs + 3 days of deadhead');
 
-// Same day: time decides which leg is first and which is last.
+// Two legs on ONE day pay one run out and one run home between them, not two of
+// each — the van left the base once that morning.
 const sameDay = [{ date: '2026-09-15', time: '16:00' }, { date: '2026-09-15', time: '06:00' }];
-assert.equal(deadheadFor(sameDay, prices).index, 1);
+assert.deepEqual(deadheadFor(sameDay, prices), { index: 1, miles: 9, price: 18 });
+assert.equal(deadheadFor(sameDay, prices).index, 1, '06:00 is that day\'s first');
 
-// A single leg is both the first and the last: it pays out AND back.
+// A single leg is its day's first and last: it pays out AND back.
 const one = [{ date: '2026-09-15', time: '09:00' }];
 assert.deepEqual(deadheadFor(one, prices), { index: 0, miles: 9, price: 18 });
 assert.equal(estimateTotal(one, [prices[0]]), 55.5, 'one leg + out + back');
+
+// The reported bug: an out-and-back across two days. Charging only the
+// itinerary's overall first and last leg would give 2 runs; there are 4.
+const twoDays = [{ date: '2026-09-16', time: '01:35' }, { date: '2026-09-17', time: '01:35' }];
+assert.equal(deadheadFor(twoDays, prices).price, 36, 'two days = four runs');
 
 // Inside the free allowance (or no base) → zero → no row at all.
 const noBase = prices.map((p) => ({ ...p, deadhead_price: '0', return_deadhead_price: '0' }));
@@ -34,7 +43,7 @@ assert.equal(estimateTotal(trips, noBase), 112.5);
 
 // Only one direction charged (the way home is inside the allowance).
 const outOnly = prices.map((p) => ({ ...p, return_deadhead_price: '0', return_deadhead_miles: '0' }));
-assert.deepEqual(deadheadFor(trips, outOnly), { index: 1, miles: 4, price: 8 });
+assert.deepEqual(deadheadFor(trips, outOnly), { index: 0, miles: 12, price: 24 });
 
 // Float dust: 14.80 + 42.90 is 57.699999999999996 in binary floating point, and
 // that whole string once rendered on a booking confirmation. Both figures come
