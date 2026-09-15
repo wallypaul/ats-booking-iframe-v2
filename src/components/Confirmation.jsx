@@ -206,7 +206,7 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
               <Box>
                 <Typography variant="body2" fontWeight={600}>Deadhead mileage</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {deadhead.miles} billable mi from our base to your first pickup (Trip {deadhead.index + 1}) — charged once per booking
+                  {deadhead.miles} billable mi — our base to your first pickup and your last drop-off back to base — charged once per booking
                 </Typography>
               </Box>
               <Typography variant="body2" fontWeight={700} color="primary.main">

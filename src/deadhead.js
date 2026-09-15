@@ -1,21 +1,40 @@
 import { toAmount } from './money.js';
 
-// Mirrors the server rule (payers/deadhead/ordering.py): earliest by date, then time.
-// The server decides authoritatively at submit; this only previews it.
-function firstLegIndex(trips) {
+// Mirrors the server rule (payers/deadhead/ordering.py): earliest by date then
+// time pays the run OUT of the base, latest pays the run HOME from the last
+// drop-off. The server decides authoritatively at submit; this only previews it.
+function legIndex(trips, pick) {
   let best = null;
   trips.forEach((t, i) => {
     if (!t.date || !t.time) return;
-    if (best === null || `${t.date}T${t.time}` < `${trips[best].date}T${trips[best].time}`) best = i;
+    if (best === null || pick(`${t.date}T${t.time}`, `${trips[best].date}T${trips[best].time}`)) {
+      best = i;
+    }
   });
   return best;
 }
 
-/** The one deadhead charge for this itinerary, or null when there is none to show. */
+const firstLegIndex = (trips) => legIndex(trips, (when, best) => when < best);
+const lastLegIndex = (trips) => legIndex(trips, (when, best) => when > best);
+
+/**
+ * The deadhead charge for this itinerary, or null when there is none to show.
+ *
+ * One figure covering both empty runs — out to the first pickup and home from
+ * the last drop-off. They are the same charge at the same rate, and showing a
+ * rider two deadhead lines reads as being billed twice.
+ */
 export function deadheadFor(trips, prices) {
-  const index = firstLegIndex(trips);
-  const price = index === null ? 0 : toAmount(prices[index]?.deadhead_price);
-  return price > 0 ? { index, miles: prices[index].deadhead_miles, price } : null;
+  const out = firstLegIndex(trips);
+  const back = lastLegIndex(trips);
+  const outPrice = out === null ? 0 : toAmount(prices[out]?.deadhead_price);
+  const backPrice = back === null ? 0 : toAmount(prices[back]?.return_deadhead_price);
+  const price = outPrice + backPrice;
+  if (price <= 0) return null;
+  const miles =
+    (out === null ? 0 : toAmount(prices[out]?.deadhead_miles)) +
+    (back === null ? 0 : toAmount(prices[back]?.return_deadhead_miles));
+  return { index: out ?? back, miles, price };
 }
 
 export const estimateTotal = (trips, prices) =>
