@@ -5,7 +5,7 @@
 // Run: node src/money.check.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { toAmount, formatAmount } from './money.js';
+import { toAmount, formatAmount, preferred } from './money.js';
 
 const sum = (prices) => formatAmount(prices.reduce((s, p) => s + toAmount(p), 0));
 
@@ -28,8 +28,21 @@ const deadhead = readFileSync(new URL('./deadhead.js', import.meta.url), 'utf8')
 assert.match(deadhead, /reduce\(\(sum, p\) => sum \+ toAmount\(p\?\.price\), 0\)/);
 
 // ...and the prices in state must already be numbers, from the API boundary.
+// That boundary is now the ONE itinerary call, not a quote per leg — the per-day
+// deadhead rule needs every leg's date at once — so the coercion moved with it.
 const app = readFileSync(new URL('./pages/App.jsx', import.meta.url), 'utf8');
-assert.match(app, /price: toAmount\(r\.data\?\.price\)/,
-  'App must coerce price where the quote response enters the app');
+assert.match(app, /price: toAmount\(p\.price\)/,
+  'App must coerce price where the itinerary response enters the app');
+assert.match(app, /distance\/iframe\/itinerary\//,
+  'pricing must go through the itinerary endpoint, or deadhead is not per-day');
+
+// preferred(): present-vs-absent, not truthiness. A backend without
+// `legs_miles` once rendered "Trip mileage 0.00 mi" beside a correct total,
+// because "an itinerary came back" was read as "every key on it is present".
+assert.equal(preferred(undefined, () => 42.8), 42.8, 'a missing key falls back');
+assert.equal(preferred(null, () => 42.8), 42.8, 'null falls back too');
+assert.equal(preferred('42.80', () => 0), 42.8, 'a present value wins');
+assert.equal(preferred('0', () => 99), 0, 'a real zero is an answer, not a gap');
+assert.equal(preferred(0, () => 99), 0);
 
 console.log('money math OK');

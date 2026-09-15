@@ -16,3 +16,15 @@ export const toAmount = (v) => {
 export const round2 = (n) => Math.round(toAmount(n) * 100) / 100;
 
 export const formatAmount = (v) => toAmount(v).toFixed(2);
+
+/**
+ * A server-sent figure when it is there, a locally derived one when it is not.
+ *
+ * The distinction is present-vs-absent, NOT truthiness: a real `0` is an answer
+ * ("no deadhead on this booking") and must not be replaced. An earlier version
+ * of the confirmation asked only "did an itinerary come back?" and then trusted
+ * every key on it, so a backend without `legs_miles` rendered "Trip mileage
+ * 0.00 mi" next to a correct total.
+ */
+export const preferred = (value, derive) =>
+  value === undefined || value === null ? derive() : toAmount(value);
