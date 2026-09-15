@@ -118,6 +118,9 @@ export default function App() {
 
   const [tripsData, setTripsData] = useState([]);
   const [tripPrices, setTripPrices] = useState([]);
+  // The server's own itinerary total, deadhead included and already grouped by
+  // day. Confirmation shows these rather than re-deriving them.
+  const [itinerary, setItinerary] = useState(null);
   // Lets Continue save whatever trip form is still open in TripsStep.
   const tripsFormRef = useRef(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
@@ -189,24 +192,27 @@ export default function App() {
       setIsPricingLoading(true);
       setSubmitError('');
       try {
-        // One quote per trip against the iframe endpoint; backend attributes
-        // it to this iframe's payer via iframe_uuid and prices at service_level.
-        const prices = await Promise.all(
-          trips.map((t) =>
-            axios
-              .post(`${ATS.apiBase}/distance/iframe/`, {
-                iframe_uuid: ATS.iframeUuid,
-                origin: t.pick_up_address,
-                destination: t.drop_off_address,
-                service_level: serviceData.service,
-                toll: serviceData.toll,
-                weight: serviceData.weight,
-              })
-              // price arrives as a Decimal string; make it a number here so
-              // every consumer can do arithmetic with it.
-              .then((r) => ({ ...r.data, price: toAmount(r.data?.price) }))
-          )
-        );
+        // ONE call for the whole itinerary, not one per trip. Deadhead is
+        // charged per day — each day's first pickup pays the run out of the
+        // base, its last drop-off pays the run home — and that rule needs every
+        // leg's date at once. Asking leg by leg and adding up the answers gave a
+        // different number from the one the server charges on submit.
+        const { data } = await axios.post(`${ATS.apiBase}/distance/iframe/itinerary/`, {
+          iframe_uuid: ATS.iframeUuid,
+          service_level: serviceData.service,
+          toll: serviceData.toll,
+          weight: serviceData.weight,
+          trips: trips.map((t) => ({
+            pick_up_address: t.pick_up_address,
+            drop_off_address: t.drop_off_address,
+            date: t.date,
+            time: t.time,
+          })),
+        });
+        // price arrives as a Decimal string; make it a number here so every
+        // consumer can do arithmetic with it.
+        const prices = data.trips.map((p) => ({ ...p, price: toAmount(p.price) }));
+        setItinerary(data);
         const pricedTripsData = addTripPricesToTrips(trips, prices, serviceData.service);
         setTripPrices(prices);
         setTripsData(pricedTripsData);
@@ -316,6 +322,7 @@ export default function App() {
     setServiceErrors({});
     setTripsData([]);
     setTripPrices([]);
+    setItinerary(null);
     setTermsAccepted(false);
   };
 
@@ -361,6 +368,7 @@ export default function App() {
             services={services}
             tripsData={tripsData}
             tripPrices={tripPrices}
+            itinerary={itinerary}
             termsAccepted={termsAccepted}
             onTermsChange={setTermsAccepted}
           />

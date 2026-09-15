@@ -12,7 +12,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlagIcon from '@mui/icons-material/Flag';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { formatAmount } from '../money';
+import { formatAmount, toAmount } from '../money';
 import { deadheadFor, estimateTotal } from '../deadhead';
 
 function SectionTitle({ children }) {
@@ -52,8 +52,18 @@ function Row({ label, value }) {
   );
 }
 
-export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, termsAccepted, onTermsChange }) {
-  const deadhead = deadheadFor(tripsData, tripPrices);
+export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, itinerary, termsAccepted, onTermsChange }) {
+  // The server already grouped the itinerary by day and totalled it, so use its
+  // answer. deadheadFor/estimateTotal remain as the fallback for a response
+  // without those fields (an older backend), and they derive the same rule from
+  // the per-leg figures — but only the server's number is guaranteed to match
+  // what the booking is charged on submit.
+  const deadhead = itinerary
+    ? { miles: toAmount(itinerary.deadhead_miles), price: toAmount(itinerary.deadhead_price) }
+    : deadheadFor(tripsData, tripPrices);
+  const total = itinerary
+    ? toAmount(itinerary.total)
+    : estimateTotal(tripsData, tripPrices);
   const svc = services.find((s) => s.code === serviceData.service);
 
   return (
@@ -201,7 +211,7 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
               {i < tripsData.length - 1 && <Divider sx={{ my: 1.5 }} />}
             </Box>
           ))}
-          {deadhead && (
+          {deadhead && deadhead.price > 0 && (
             <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
               <Box>
                 <Typography variant="body2" fontWeight={600}>Deadhead mileage</Typography>
@@ -218,7 +228,7 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
             <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '2px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" fontWeight={600}>Total Estimated Price</Typography>
               <Typography variant="body1" fontWeight={700} color="primary.main">
-                ${formatAmount(estimateTotal(tripsData, tripPrices))}
+                ${formatAmount(total)}
               </Typography>
             </Box>
           )}
