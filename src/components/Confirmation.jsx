@@ -12,7 +12,20 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlagIcon from '@mui/icons-material/Flag';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { toAmount, formatAmount } from '../money';
+import { formatAmount, preferred, toAmount } from '../money';
+import { deadheadFor, estimateTotal } from '../deadhead';
+
+/** One row of the cost breakdown: label left, figure right. */
+function CostLine({ label, value }) {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Typography variant="caption" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
 
 function SectionTitle({ children }) {
   return (
@@ -51,7 +64,28 @@ function Row({ label, value }) {
   );
 }
 
-export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, termsAccepted, onTermsChange }) {
+export default function Confirmation({ passenger, serviceData, services = [], tripsData, tripPrices, itinerary, termsAccepted, onTermsChange }) {
+  // Prefer the server's own figure for each line, falling back PER FIELD to one
+  // derived from the per-leg prices.
+  //
+  // Per field, not all-or-nothing: an earlier version asked "did an itinerary
+  // come back?" and then trusted every key on it, so a server that predated
+  // `legs_miles` rendered "Trip mileage 0.00 mi" next to a correct total. A
+  // missing key must fall back, never read as zero.
+  //
+  // Only the server's numbers are guaranteed to match what the booking is
+  // charged on submit — the fallbacks re-derive the same per-day rule from
+  // single-leg answers, which is close but not authoritative.
+  const sumLegs = (key) => tripPrices.reduce((sum, p) => sum + toAmount(p?.[key]), 0);
+
+  const derived = deadheadFor(tripsData, tripPrices);
+  const deadhead = {
+    miles: preferred(itinerary?.deadhead_miles, () => derived?.miles ?? 0),
+    price: preferred(itinerary?.deadhead_price, () => derived?.price ?? 0),
+  };
+  const total = preferred(itinerary?.total, () => estimateTotal(tripsData, tripPrices));
+  const legsTotal = preferred(itinerary?.legs_total, () => sumLegs('price'));
+  const legsMiles = preferred(itinerary?.legs_miles, () => sumLegs('distance_miles') || sumLegs('distance'));
   const svc = services.find((s) => s.code === serviceData.service);
 
   return (
@@ -199,26 +233,34 @@ export default function Confirmation({ passenger, serviceData, services = [], tr
               {i < tripsData.length - 1 && <Divider sx={{ my: 1.5 }} />}
             </Box>
           ))}
-          {tripPrices.length > 1 && (
-            <Box
-              sx={{
-                mt: 1.5,
-                pt: 1.5,
-                borderTop: '2px solid',
-                borderColor: 'divider',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="body2" fontWeight={600}>
-                Total Estimated Price
-              </Typography>
-              <Typography variant="body1" fontWeight={700} color="primary.main">
-                ${formatAmount(tripPrices.reduce((sum, p) => sum + toAmount(p.price), 0))}
+          {/* The total first and largest, then the lines that add up to it.
+              A deadhead figure tucked under the trip prices reads as a footnote
+              to a number the client has already accepted — it is not, it is part
+              of what they pay. */}
+          <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '2px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+              <Typography variant="body2" fontWeight={700}>Total Estimated Price</Typography>
+              <Typography variant="h6" fontWeight={700} color="primary.main">
+                ${formatAmount(total)}
               </Typography>
             </Box>
-          )}
+            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <CostLine label="Trip fare" value={`$${formatAmount(legsTotal)}`} />
+              <CostLine label="Trip mileage" value={`${formatAmount(legsMiles)} mi`} />
+              {deadhead.price > 0 && (
+                <>
+                  <CostLine label="Deadhead cost" value={`$${formatAmount(deadhead.price)}`} />
+                  <CostLine label="Deadhead mileage" value={`${formatAmount(deadhead.miles)} billable mi`} />
+                </>
+              )}
+            </Box>
+            {deadhead.price > 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                Deadhead is the empty drive from our base out to your first pickup and
+                home from your last drop-off, each day you travel.
+              </Typography>
+            )}
+          </Box>
         </Paper>
       </Box>
       {/* ── terms ── */}
