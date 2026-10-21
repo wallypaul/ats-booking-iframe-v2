@@ -25,3 +25,21 @@ export function isPastInNY(date, time, at = new Date()) {
   const now = nyNow(at);
   return `${date}T${time.slice(0, 5)}` < `${now.date}T${now.time}`;
 }
+
+/**
+ * '09/01/2099 · 09:00 am' for a trip's stored date and time.
+ *
+ * String splitting, never `new Date()`: the trip's date and time are already
+ * New York wall-clock values, and parsing them in the rider's browser zone
+ * could move the day. Either part may be missing; the other still prints.
+ */
+export function tripWhen(date, time) {
+  const [y, m, d] = String(date ?? '').split('-');
+  const day = y && m && d ? `${m}/${d}/${y}` : '';
+  const [h, min] = String(time ?? '').split(':');
+  const hour = Number(h);
+  const clock = h && min && Number.isInteger(hour)
+    ? `${String(hour % 12 || 12).padStart(2, '0')}:${min} ${hour >= 12 ? 'pm' : 'am'}`
+    : '';
+  return [day, clock].filter(Boolean).join(' · ');
+}

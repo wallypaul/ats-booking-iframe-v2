@@ -239,11 +239,13 @@ export default function App() {
   const handleSubmit = async () => {
     setSubmitError('');
     const pricedTripsData = addTripPricesToTrips(tripsData, tripPrices, serviceData.service);
-    // Booking endpoint re-validates payer pricing same as /distance/iframe/ — needs service_level too.
-    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, iframe_uuid: ATS.iframeUuid, service_level: serviceData.service };
+    // v2 iframe endpoint: payer comes from the uuid in the path, which is what
+    // attributes the booking to the payer (payer_account) — required for the
+    // post-payment tracking + invoice flow to find it. service_level drives
+    // server-side rate-schedule pricing.
+    const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, service_level: serviceData.service };
     try {
-      console.log('Submitting payload:', payload); // Debug log
-      const res = await axios.post(`${API_URL}/booking/`, payload, {
+      const res = await axios.post(`${API_URL}/api/v2/iframe/${ATS.iframeUuid}/booking/`, payload, {
         validateStatus: () => true,
       });
 
