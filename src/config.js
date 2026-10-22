@@ -7,6 +7,12 @@ export const API_URL = import.meta.env.VITE_API_URL
 // MUST be referrer-restricted in the Google Cloud console.
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
+// Cloudflare Turnstile site key — bot protection on the resource-spending calls
+// (itinerary quote → Google, pay → Square, booking create). Public by design;
+// the backend verifies each token with its secret. Blank = Turnstile disabled
+// (dev), and the backend skips verification when its secret is likewise unset.
+export const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+
 // ATS iframe identity. iframe_uuid names this iframe → the payer that owns it;
 // the backend uses it to resolve service levels and attribute quotes + bookings.
 // It's a PUBLIC identifier (client env vars ship to the browser), not a secret.

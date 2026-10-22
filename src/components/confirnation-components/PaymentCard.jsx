@@ -9,6 +9,7 @@ import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import StatusCard from './StatusCard';
 import { API_URL, ATS } from '../../config';
+import { getTurnstileToken } from '../../turnstile';
 
 // Square Web Payments SDK — a different script host per environment.
 const SDK_URL = {
@@ -104,6 +105,8 @@ export default function PaymentCard({ booking, onPaid }) {
       const { data } = await axios.post(`${API_URL}/api/v2/iframe/${ATS.iframeUuid}/pay/`, {
         ref: booking?.ref,
         source_id: result.token,
+        // Bot gate: a fresh single-use token for the Square charge.
+        'cf-turnstile-response': await getTurnstileToken('pay'),
       });
       onPaid?.(data); // {ref, status, payment_status, amount}
     } catch (e) {

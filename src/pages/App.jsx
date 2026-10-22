@@ -28,6 +28,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 
 import { API_URL, ATS } from '../config';
+import { getTurnstileToken } from '../turnstile';
 
 import PassengerDetails from '../components/PassengerDetails';
 import ServiceStep from '../components/ServiceStep';
@@ -208,6 +209,8 @@ export default function App() {
             date: t.date,
             time: t.time,
           })),
+          // Bot gate: a fresh single-use token for this Google-spending call.
+          'cf-turnstile-response': await getTurnstileToken('quote'),
         });
         // price arrives as a Decimal string; make it a number here so every
         // consumer can do arithmetic with it.
@@ -245,6 +248,8 @@ export default function App() {
     // server-side rate-schedule pricing.
     const payload = { passenger, serviceData, tripsData: pricedTripsData, source: ATS.source, service_level: serviceData.service };
     try {
+      // Bot gate: a fresh single-use token for the booking create.
+      payload['cf-turnstile-response'] = await getTurnstileToken('booking');
       const res = await axios.post(`${API_URL}/api/v2/iframe/${ATS.iframeUuid}/booking/`, payload, {
         validateStatus: () => true,
       });
