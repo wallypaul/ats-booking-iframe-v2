@@ -105,3 +105,15 @@ nemt-booking/
 - **Service types**: Update the `SERVICES` array in `ServiceStep.jsx`
 - **Trip fields**: Add or remove fields in `TripsStep.jsx` and update validation
 - **Fonts**: Change the Google Fonts import in `index.html` and update `theme.js`
+
+## Post-payment trip tracking
+
+After a booking is confirmed, `ConfirmedCard` offers "Track your trip": the rider
+is emailed a 6-digit code (to the address already on the booking — shown only
+masked), and on verification sees live status, ETA, a small zoomed driver-location
+map, and — when an invoice exists — an "Email me my invoice" button. Backed by the
+public `/api/v2/iframe/<uuid>/track/…` endpoints (`src/api/track.js`).
+
+The driver-location thumbnail uses the Google **Static Maps API** (an `<img>`). The
+key in `VITE_GOOGLE_MAPS_API_KEY` must have **Maps Static API enabled** in the
+Google Cloud console (in addition to Places/Maps JS used for autocomplete).

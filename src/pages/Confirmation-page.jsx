@@ -13,6 +13,8 @@ import PendingApprovalCard from '../components/confirnation-components/PendingAp
 import ConfirmedCard from '../components/confirnation-components/ConfirmedCard';
 import InvalidBookingIdCard from '../components/confirnation-components/InvalidBookingIdCard';
 import InputBookingId from '../components/confirnation-components/InputBookingId';
+import DenyCard from '../components/confirnation-components/DenyCard';
+import { cardFor } from '../bookingCard';
 import { Shell } from './App';
 import axios from 'axios';
 import { API_URL } from '../config';
@@ -47,7 +49,7 @@ function StatusCardSkeleton() {
 }
 
 export default function ConfirmationPage() {
-  const [bookingStatus, setBookingStatus] = useState('pending'); // 'pending' | 'payment' | 'confirmed' | 'invalid'
+  const [bookingStatus, setBookingStatus] = useState('pending'); // see cardFor in bookingCard.js
   const [bookingId, setBookingId] = useState('');
   const [booking, setBooking] = useState(null); // full booking payload from the API
   const [loading, setLoading] = useState(false);
@@ -60,32 +62,9 @@ export default function ConfirmationPage() {
       
       axios.get(`${API_URL}/api/get-booking/`, { params: { ref: upperId } })
       .then(response => {
-        const status = response.data.status; 
-        setBooking(response.data); 
-        if (response.status === 200) {
-          if (status === 'received') {
-            setBookingStatus('pending');
-
-            }
-          else if (status === 'accepted') setBookingStatus('payment');
-          else if (status === 'deny') setBookingStatus('confirmed');
-          else if (status === 'confirmed') setBookingStatus('confirmed');
-          else {
-            throw new Error(`Unexpected booking status: ${status}`);
-            setBookingStatus('invalid');
-            return;
-          }
-          
-        }
-        else if (response.status !== 200) {
-          throw new Error(`Unexpected response status: ${response.status}`);
-          setBookingStatus('invalid');
-          return;
-        }
-        else {
-          setBookingStatus('invalid');
-          return;
-        }
+        setBooking(response.data);
+        // Payment first, then status - see bookingCard.js for why.
+        setBookingStatus(cardFor(response.data));
       })
       .catch(error => {
         console.error('Error fetching booking status:', error);
@@ -165,8 +144,10 @@ export default function ConfirmationPage() {
                 {bookingStatus === 'confirmed' && (
                   <ConfirmedCard
                     amount={booking?.payment_status === 'paid' ? booking.amount || booking.total : null}
+                    bookingRef={booking?.ref || bookingId}
                   />
                 )}
+                {bookingStatus === 'denied' && <DenyCard />}
                 {bookingStatus === 'invalid' && <InvalidBookingIdCard />}
               </>
             )}

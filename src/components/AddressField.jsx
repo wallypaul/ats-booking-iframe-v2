@@ -34,7 +34,9 @@ const GMP_THEME = (theme) => ({
   // Placeholder, and the secondary line under each suggestion.
   '--gmp-mat-color-on-surface-variant': theme.palette.text.secondary,
   // The resting border. NOT --gmp-mat-color-outline, which is not a real token.
-  '--gmp-mat-color-outline-decorative': theme.palette.divider,
+  // MUI's own outlined-input border, not theme.divider (#E2DED6): every
+  // neighbouring TextField draws this, and divider read as a washed-out field.
+  '--gmp-mat-color-outline-decorative': 'rgba(0, 0, 0, 0.23)',
   // Focus ring and active accent — Google's blue otherwise.
   '--gmp-mat-color-primary': theme.palette.primary.main,
   // The wash behind a hovered or keyboard-highlighted suggestion.
